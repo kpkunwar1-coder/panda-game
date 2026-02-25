@@ -3,205 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest: Saga Evolution</title>
+    <title>Panda Quest: The Journey</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --accent: #00f2ea; --bg: #0b0e14; --panel: #161b22; }
         body { 
             font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; 
             margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden;
-            touch-action: none;
         }
 
-        /* Stats Bar */
-        .header { width: 100%; background: #000; padding: 15px 0; border-bottom: 1px solid #333; text-align: center; }
-        #heart-display { font-size: 1.5rem; letter-spacing: 5px; }
+        /* Top Header */
+        .header { width: 100%; background: #000; padding: 10px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-around; align-items: center; }
+        .level-badge { background: var(--accent); color: black; padding: 5px 15px; border-radius: 20px; font-weight: 900; font-size: 0.9rem; }
+        #heart-display { font-size: 1.2rem; letter-spacing: 3px; }
 
+        /* Stats Bar */
         .stats-bar { display: flex; justify-content: space-around; width: 100%; max-width: 400px; margin: 15px 0; }
-        .stat-box { text-align: center; background: var(--panel); padding: 8px 15px; border-radius: 10px; border: 1px solid #333; min-width: 95px; }
-        .stat-label { font-size: 0.6rem; color: #94a3b8; display: block; margin-bottom: 2px; }
+        .stat-box { text-align: center; background: var(--panel); padding: 8px 15px; border-radius: 10px; border: 1px solid #333; min-width: 90px; }
+        .stat-label { font-size: 0.6rem; color: #94a3b8; display: block; }
         .stat-value { font-size: 1.2rem; font-weight: 800; color: var(--accent); }
 
-        /* Puzzle Board */
+        /* Board */
         #puzzle-board { 
-            display: grid; gap: 4px; width: 90vw; max-width: 360px; 
+            display: grid; gap: 4px; width: 92vw; max-width: 380px; 
             background: #1e293b; padding: 10px; border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .tile { 
             aspect-ratio: 1/1; background-repeat: no-repeat; border-radius: 4px;
-            transition: transform 0.3s ease, border 0.2s; 
-            cursor: pointer; border: 2px solid transparent;
+            transition: transform 0.2s, border 0.2s; cursor: pointer; border: 2px solid transparent;
         }
         .tile.selected { border: 2px solid var(--accent); transform: scale(1.05); z-index: 10; box-shadow: 0 0 15px var(--accent); }
-        
-        /* Modal UI */
-        #start-modal { position: fixed; inset: 0; background: #0b0e14; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        #preview-img { width: 180px; height: 180px; border: 3px solid var(--accent); border-radius: 12px; margin: 20px 0; background-size: cover; background-position: center; }
-        .btn-play { padding: 18px 60px; background: var(--accent); color: #000; border-radius: 50px; border: none; font-weight: 800; font-size: 1.1rem; cursor: pointer; }
-        
-        #msg-bubble { background: white; color: black; padding: 15px; border-radius: 15px; margin: 0 40px 20px; font-weight: bold; position: relative; max-width: 300px; }
-        #msg-bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; border-width: 10px 10px 0; border-style: solid; border-color: white transparent; margin-left: -10px; }
+
+        /* Story UI */
+        #start-modal { position: fixed; inset: 0; background: rgba(11, 14, 20, 0.95); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #msg-bubble { background: white; color: black; padding: 15px; border-radius: 15px; margin: 0 40px 20px; font-weight: bold; position: relative; max-width: 280px; text-align: center; }
+        #preview-img { width: 150px; height: 150px; border: 3px solid var(--accent); border-radius: 12px; margin-bottom: 20px; background-size: cover; }
+        .btn-play { padding: 15px 50px; background: var(--accent); color: #000; border-radius: 50px; border: none; font-weight: 800; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="start-modal">
-        <div id="msg-bubble">Help me restore the forest!</div>
+        <div id="msg-bubble">Hey! Let's get started.</div>
         <div id="preview-img"></div>
-        <button class="btn-play" onclick="closeModal()">START LEVEL</button>
+        <button class="btn-play" onclick="closeModal()">GO!</button>
     </div>
 
     <div class="header">
+        <div class="level-badge">LEVEL <span id="current-lvl-display">1</span></div>
         <div id="heart-display">❤️❤️❤️❤️❤️</div>
     </div>
 
     <div class="stats-bar">
         <div class="stat-box">
-            <span class="stat-label">MOVES</span>
+            <span class="stat-label">MOVES LEFT</span>
             <span id="moves-left" class="stat-value">--</span>
         </div>
         <div class="stat-box">
-            <span class="stat-label">WORLD</span>
-            <span id="level-info" class="stat-value">--</span>
+            <span class="stat-label">TILES</span>
+            <span id="tile-count" class="stat-value">--</span>
         </div>
     </div>
 
     <div id="puzzle-board"></div>
 
+    <audio id="snd-move" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+
     <script>
-        // --- CONFIG & STATE ---
+        // --- GAME STATE ---
         let level = parseInt(localStorage.getItem('pandaLevel')) || 1;
-        let isTutorialPhase = true; 
-        let grid = 2; 
-        let moveLimit = 10;
+        // The tutorial only happens once ever (at level 1)
+        let isWarmupDone = level > 1; 
+
+        // Difficulty Tuning
+        let grid = 3; 
+        if (level === 1 && !isWarmupDone) grid = 2; // Only Level 1 starts with 2x2
+        else if (level < 3) grid = 3;
+        else if (level < 6) grid = 4;
+        else grid = 5; // Harder levels get a 5x5 grid!
+
+        let moveLimit = grid * 10;
         let currentMoves = moveLimit;
 
-        // Sequence skips image1.png to match your folder
+        // Image Mapping (Matches your naming image.png, image2.png, etc.)
         const images = ['image.png', 'image2.png', 'image3.png', 'image4.png', 'image5.png'];
+        const stories = [
+            "Welcome! I'm Pabu. Let's fix this first photo!",
+            "The forest is getting thicker. Stay focused!",
+            "Look! The ancient ruins. This one is tricky.",
+            "Almost there! The Great Bamboo Falls are ahead.",
+            "You're a master! The final piece of the map!"
+        ];
+
         let currentImg = '';
         let tiles = [];
         let firstSelection = null;
 
-        function getImagePath() {
-            let index = (level - 1) % images.length;
-            return `./${images[index]}`;
-        }
-
         function init() {
-            currentImg = getImagePath();
-
-            // Set Difficulty
-            if (!isTutorialPhase) {
-                grid = level <= 2 ? 3 : 4; // Levels 1-2 are 3x3, Level 3+ is 4x4
-                moveLimit = grid === 3 ? 30 : 60;
-                currentMoves = moveLimit;
-            } else {
-                grid = 2;
-                currentMoves = 10;
-            }
-
-            document.getElementById('level-info').innerText = level;
+            // Pick image based on level
+            let imgIdx = (level - 1) % images.length;
+            currentImg = `./${images[imgIdx]}`;
+            
+            document.getElementById('current-lvl-display').innerText = level;
             document.getElementById('moves-left').innerText = currentMoves;
-            
-            // Image Validation
-            const preview = document.getElementById('preview-img');
-            preview.style.backgroundImage = `url('${currentImg}')`;
-            
-            const tester = new Image();
-            tester.src = currentImg;
-            tester.onerror = () => {
-                console.error("Image failed:", currentImg, "Using image.png fallback");
-                currentImg = './image.png';
-                preview.style.backgroundImage = `url('${currentImg}')`;
-                renderBoard();
-            };
+            document.getElementById('tile-count').innerText = `${grid}x${grid}`;
+            document.getElementById('msg-bubble').innerText = stories[imgIdx] || "You're doing great!";
+            document.getElementById('preview-img').style.backgroundImage = `url('${currentImg}')`;
 
             tiles = Array.from({length: grid * grid}, (_, i) => i);
-            shuffleTiles();
-            renderBoard();
+            shuffle();
+            render();
         }
 
-        function shuffleTiles() {
-            if (isTutorialPhase) {
-                // Easy 2x2 swap for tutorial warmup
-                [tiles[0], tiles[1]] = [tiles[1], tiles[0]]; 
+        function shuffle() {
+            if (level === 1 && !isWarmupDone) {
+                [tiles[0], tiles[1]] = [tiles[1], tiles[0]]; // Simple 1-move tutorial
             } else {
-                // Real shuffle for the main challenge
-                do {
-                    tiles.sort(() => Math.random() - 0.5);
-                } while (tiles.every((v, i) => v === i)); // Ensure it's not solved instantly
+                tiles.sort(() => Math.random() - 0.5);
             }
         }
 
-        function renderBoard() {
+        function render() {
             const board = document.getElementById('puzzle-board');
             board.style.gridTemplateColumns = `repeat(${grid}, 1fr)`;
             board.innerHTML = '';
-            const boardPx = 360;
+            const size = 360;
 
             tiles.forEach((val, i) => {
                 const div = document.createElement('div');
                 div.className = 'tile' + (firstSelection === i ? ' selected' : '');
                 div.style.backgroundImage = `url('${currentImg}')`;
-                div.style.backgroundSize = `${boardPx}px ${boardPx}px`;
-                
+                div.style.backgroundSize = `${size}px ${size}px`;
                 let r = Math.floor(val / grid), c = val % grid;
-                div.style.backgroundPosition = `-${c * (boardPx/grid)}px -${r * (boardPx/grid)}px`;
-                
-                div.onclick = () => handleSwap(i);
+                div.style.backgroundPosition = `-${c * (size/grid)}px -${r * (size/grid)}px`;
+                div.onclick = () => swap(i);
                 board.appendChild(div);
             });
         }
 
-        function handleSwap(idx) {
+        function swap(idx) {
             if (firstSelection === null) {
                 firstSelection = idx;
-                renderBoard();
+                render();
             } else {
                 if (firstSelection !== idx) {
                     [tiles[firstSelection], tiles[idx]] = [tiles[idx], tiles[firstSelection]];
                     currentMoves--;
-                    document.getElementById('moves-left').innerText = currentMoves;
-                    if(window.navigator.vibrate) window.navigator.vibrate(20);
+                    document.getElementById('snd-move').play();
+                    if(window.navigator.vibrate) window.navigator.vibrate(15);
                 }
                 firstSelection = null;
-                renderBoard();
-                checkProgress();
+                document.getElementById('moves-left').innerText = currentMoves;
+                render();
+                check();
             }
         }
 
-        function checkProgress() {
-            const isSolved = tiles.every((v, i) => v === i);
+        function check() {
+            if (tiles.every((v, i) => v === i)) {
+                document.getElementById('snd-win').play();
+                confetti();
 
-            if (isSolved) {
-                if (isTutorialPhase) {
-                    isTutorialPhase = false;
-                    confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 } });
+                if (level === 1 && !isWarmupDone) {
+                    // One-time tutorial skip logic
+                    isWarmupDone = true;
                     setTimeout(() => {
-                        document.getElementById('msg-bubble').innerText = "Warmup complete! Now the real challenge begins...";
-                        init(); 
-                    }, 1200);
+                        grid = 3; // Immediately jump to 3x3
+                        currentMoves = 30;
+                        init();
+                    }, 1500);
                 } else {
-                    confetti({ particleCount: 150, spread: 100 });
+                    // Next Level
                     setTimeout(() => {
                         level++;
                         localStorage.setItem('pandaLevel', level);
-                        isTutorialPhase = true; 
                         location.reload();
                     }, 2000);
                 }
             } else if (currentMoves <= 0) {
-                alert("Out of moves! The forest is still jumbled. Try again!");
+                alert("Out of moves! Heart lost.");
                 location.reload();
             }
         }
 
-        function closeModal() {
-            document.getElementById('start-modal').style.display = 'none';
-        }
-
+        function closeModal() { document.getElementById('start-modal').style.display = 'none'; }
         window.onload = init;
     </script>
 </body>
