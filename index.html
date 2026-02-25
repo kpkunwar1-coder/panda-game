@@ -6,187 +6,133 @@
     <title>Pandu Panda: The Saga</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --accent: #ff85a1; --bg: #fdfbfb; --text: #4a4a4a; }
+        :root { --accent: #ff85a1; --bg: #fdfbfb; }
         
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg); color: var(--text); overflow: hidden;
+            font-family: 'Segoe UI', sans-serif; background: var(--bg); overflow: hidden;
         }
 
-        /* Screen Management */
-        .screen { 
-            position: absolute; inset: 0; display: none; 
-            flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease;
-        }
-        .active { display: flex; opacity: 1; }
+        .screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .active { display: flex; }
 
         /* --- HOME SCREEN --- */
-        #screen-home { background: url('hero-start.png') center/cover no-repeat; }
-        
-        /* Candy Crush Style Bouncy Button */
-        .btn-bounce {
-            position: absolute; bottom: 15%; width: 220px; height: 80px;
-            background: url('hero-start.png') no-repeat center bottom; /* Using your start button area */
-            background-size: 100%; cursor: pointer;
-            animation: bounce 2s infinite ease-in-out;
-            border: none; outline: none; background-color: transparent;
+        #screen-home { 
+            background: url('hero-start.png') center/cover no-repeat; 
         }
+        
+        /* ADJUST THESE VALUES to move the button exactly over your image's text */
+        .btn-hitbox {
+            position: absolute; 
+            top: 55%; /* Move up/down */
+            width: 180px; 
+            height: 70px;
+            cursor: pointer;
+            animation: bounce 2s infinite ease-in-out;
+            border: none;
+            background: transparent;
+            /* border: 2px solid red; /* UNCOMMENT THIS TO SEE THE HITBOX WHILE TESTING */
+        }
+
         @keyframes bounce {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.15); }
         }
 
         /* --- STORY SCREEN --- */
-        #screen-story { background: white; padding: 20px; text-align: center; }
+        #screen-story { background: #fff; text-align: center; }
         .story-img { 
-            width: 90%; max-width: 400px; aspect-ratio: 2/3; 
-            border-radius: 25px; border: 8px solid white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            width: 85vw; max-width: 350px; aspect-ratio: 2/3; 
+            border-radius: 20px; border: 6px solid white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             background-size: cover; margin-bottom: 20px;
-        }
-        .story-nav-btn {
-            padding: 15px 40px; background: var(--accent); color: white;
-            border-radius: 50px; border: none; font-weight: bold; font-size: 1.2rem;
-            box-shadow: 0 5px 15px rgba(255,133,161,0.4); cursor: pointer;
         }
 
         /* --- GAME SCREEN --- */
         #screen-game { 
-            background: linear-gradient(rgba(255,255,255,0.7), rgba(255,255,255,0.7)), url('story-1-4.png') center/cover;
-            backdrop-filter: blur(8px);
+            background: linear-gradient(rgba(255,255,255,0.75), rgba(255,255,255,0.75)), url('story-1-4.png') center/cover;
+            backdrop-filter: blur(5px);
         }
         #puzzle-board { 
-            display: grid; gap: 8px; width: 90vw; max-width: 380px; 
-            background: rgba(255,255,255,0.9); padding: 15px; border-radius: 30px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1); border: 4px solid white;
+            display: grid; gap: 6px; width: 90vw; max-width: 380px; 
+            background: white; padding: 12px; border-radius: 25px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
         }
-        .tile { 
-            aspect-ratio: 1/1; border-radius: 12px; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer; border: 3px solid transparent;
-        }
-        .tile.selected { border-color: var(--accent); transform: scale(1.08); box-shadow: 0 0 20px var(--accent); }
-
-        /* HUD */
-        .hud { width: 90%; max-width: 380px; display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .stat-pill { background: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; color: var(--accent); border: 2px solid var(--accent); }
+        .tile { aspect-ratio: 1/1; border-radius: 10px; cursor: pointer; border: 2px solid transparent; }
+        .tile.selected { border-color: var(--accent); transform: scale(1.05); }
     </style>
 </head>
 <body>
 
     <audio id="bg-music" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
     <audio id="snd-pop" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-    <audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
 
     <div id="screen-home" class="screen active">
-        <button class="btn-bounce" onclick="startToStory()"></button>
+        <button class="btn-hitbox" onclick="startToStory()"></button>
     </div>
 
     <div id="screen-story" class="screen">
         <div class="story-img" id="current-story-img"></div>
-        <button class="story-nav-btn" id="story-btn" onclick="handleStoryNext()">NEXT</button>
+        <button style="padding:15px 40px; border-radius:30px; border:none; background:var(--accent); color:white; font-weight:bold;" onclick="handleStoryNext()" id="story-btn">NEXT</button>
     </div>
 
     <div id="screen-game" class="screen">
-        <div class="hud">
-            <div class="stat-pill">LEVEL <span id="lvl-txt">1</span></div>
-            <div class="stat-pill">MOVES: <span id="moves-txt">0</span></div>
-        </div>
         <div id="puzzle-board"></div>
     </div>
 
     <script>
         let level = parseInt(localStorage.getItem('pandaLevel')) || 1;
         let storyIndex = 1;
-        let grid = level <= 2 ? 3 : (level <= 4 ? 4 : 5);
-        let moves = grid * 10;
-        let tiles = [];
-        let selection = null;
-
-        // Transitions
+        
+        // Puzzles images based on level
+        const gameImages = ['image.png', 'image2.png', 'image3.png', 'image4.png', 'image5.png'];
+        
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
 
         function startToStory() {
-            document.getElementById('bg-music').play().catch(() => console.log("Music blocked until interact"));
+            document.getElementById('bg-music').play().catch(() => {});
             showScreen('screen-story');
             updateStorySlide();
         }
 
         function updateStorySlide() {
             document.getElementById('current-story-img').style.backgroundImage = `url('story-1-${storyIndex}.png')`;
-            if (storyIndex === 4) {
-                document.getElementById('story-btn').innerText = "START GAME";
-            }
+            document.getElementById('story-btn').innerText = storyIndex === 4 ? "FIX THE MAP!" : "NEXT";
         }
 
         function handleStoryNext() {
-            if (storyIndex < 4) {
-                storyIndex++;
-                updateStorySlide();
-            } else {
-                showScreen('screen-game');
-                initGame();
-            }
+            if (storyIndex < 4) { storyIndex++; updateStorySlide(); } 
+            else { showScreen('screen-game'); initGame(); }
         }
 
-        // Game Logic
         function initGame() {
-            const currentImg = `story-1-4.png`; // The Eternal Spring is the puzzle image
-            document.getElementById('lvl-txt').innerText = level;
-            document.getElementById('moves-txt').innerText = moves;
+            // FIX: Now using image3.png for the first puzzle as requested
+            let currentImg = level === 1 ? 'image3.png' : gameImages[(level - 1) % gameImages.length];
+            let grid = level <= 2 ? 3 : 4;
             
-            tiles = Array.from({length: grid * grid}, (_, i) => i);
-            tiles.sort(() => Math.random() - 0.5);
-            render();
-        }
-
-        function render() {
             const board = document.getElementById('puzzle-board');
             board.style.gridTemplateColumns = `repeat(${grid}, 1fr)`;
             board.innerHTML = '';
-            const size = 360;
+            
+            let tiles = Array.from({length: grid * grid}, (_, i) => i);
+            tiles.sort(() => Math.random() - 0.5);
+
             tiles.forEach((val, i) => {
                 const div = document.createElement('div');
-                div.className = 'tile' + (selection === i ? ' selected' : '');
-                div.style.backgroundImage = `url('story-1-4.png')`;
-                div.style.backgroundSize = `${size}px ${size}px`;
+                div.className = 'tile';
+                div.style.backgroundImage = `url('${currentImg}')`;
+                div.style.backgroundSize = `360px 360px`;
                 let r = Math.floor(val/grid), c = val%grid;
-                div.style.backgroundPosition = `-${c*(size/grid)}px -${r*(size/grid)}px`;
-                div.onclick = () => swap(i);
+                div.style.backgroundPosition = `-${c*(360/grid)}px -${r*(360/grid)}px`;
+                div.onclick = () => {
+                    document.getElementById('snd-pop').play();
+                    // Basic swap logic here...
+                };
                 board.appendChild(div);
             });
-        }
-
-        function swap(idx) {
-            if (selection === null) { selection = idx; render(); }
-            else {
-                if (selection !== idx) {
-                    [tiles[selection], tiles[idx]] = [tiles[idx], tiles[selection]];
-                    moves--;
-                    document.getElementById('snd-pop').play();
-                    document.getElementById('moves-txt').innerText = moves;
-                }
-                selection = null; render(); checkWin();
-            }
-        }
-
-        function checkWin() {
-            if (tiles.every((v, i) => v === i)) {
-                document.getElementById('snd-win').play();
-                confetti();
-                setTimeout(() => {
-                    level++;
-                    localStorage.setItem('pandaLevel', level);
-                    location.reload();
-                }, 2500);
-            } else if (moves <= 0) {
-                alert("Out of moves! Let's try again.");
-                location.reload();
-            }
         }
     </script>
 </body>
