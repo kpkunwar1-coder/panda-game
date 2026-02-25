@@ -3,237 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest: Swipe Edition</title>
+    <title>Panda Quest: Move Saga</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --accent: #00f2ea; --bg: #0b0e14; --panel: #161b22; }
         body { 
             font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; 
-            margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
-            display: flex; flex-direction: column; align-items: center; touch-action: none;
+            margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden;
         }
 
-        /* Stats Header */
-        .header { width: 100%; background: #000; padding: 10px 0; border-bottom: 1px solid #333; z-index: 100; text-align: center; }
-        #heart-display { font-size: 1.4rem; letter-spacing: 4px; }
-        #heart-timer { font-size: 0.7rem; color: #94a3b8; margin-top: 4px; }
+        /* Top Bar */
+        .header { width: 100%; background: #000; padding: 15px 0; border-bottom: 1px solid #333; text-align: center; z-index: 100; }
+        #heart-display { font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 5px; }
+        #heart-timer { font-size: 0.7rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
 
-        .controls { display: flex; gap: 30px; margin: 15px 0; }
-        .icon-btn { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; font-size: 0.65rem; gap: 5px; cursor: pointer; }
-        .icon-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        /* Stats Row */
+        .stats-bar { display: flex; justify-content: space-around; width: 100%; max-width: 400px; margin: 20px 0; }
+        .stat-box { text-align: center; background: var(--panel); padding: 10px 20px; border-radius: 10px; border: 1px solid #333; }
+        .stat-label { font-size: 0.6rem; color: #94a3b8; display: block; margin-bottom: 2px; }
+        .stat-value { font-size: 1.2rem; font-weight: 800; color: var(--accent); }
 
         /* Puzzle Board */
         #puzzle-board { 
-            display: grid; gap: 2px; width: 90vw; max-width: 350px; 
-            background: #1e293b; padding: 6px; border-radius: 12px;
+            display: grid; gap: 4px; width: 90vw; max-width: 360px; 
+            background: #1e293b; padding: 8px; border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
-        .slot { aspect-ratio: 1/1; background: #0f172a; border-radius: 4px; }
+        .tile { 
+            aspect-ratio: 1/1; background-repeat: no-repeat; border-radius: 4px;
+            transition: transform 0.1s ease-out; cursor: pointer;
+        }
+        .tile.empty { background: #0f172a !important; cursor: default; border: 1px dashed #334155; }
         
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-6px); }
-            75% { transform: translateX(6px); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
         }
 
-        /* --- THE SWIPE TRAY (UPDATED) --- */
-        .tray-container { 
-            width: 100vw; background: var(--panel); position: fixed; 
-            bottom: 0; padding: 10px 0 25px 0; border-top: 2px solid #333; 
-            z-index: 1000;
-        }
-        .tray-label { text-align: center; font-size: 0.6rem; color: #555; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        #piece-tray { 
-            display: flex; gap: 15px; overflow-x: auto; /* Enable horizontal swipe */
-            padding: 10px 30px; align-items: center; min-height: 100px;
-            scrollbar-width: none; /* Hide scrollbar Firefox */
-            -webkit-overflow-scrolling: touch; /* Smooth swipe iOS */
-        }
-        #piece-tray::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome/Safari */
+        /* Modal & UI */
+        #start-modal { position: fixed; inset: 0; background: #0b0e14; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #preview-img { width: 200px; height: 200px; border: 3px solid var(--accent); border-radius: 12px; margin: 20px 0; background-size: cover; }
+        .btn-play { padding: 18px 60px; background: var(--accent); color: #000; border-radius: 50px; border: none; font-weight: 800; font-size: 1.1rem; min-width: 200px; cursor: pointer; }
+        .btn-disabled { background: #334155 !important; color: #94a3b8 !important; }
 
-        .tile { 
-            flex: 0 0 80px; /* IMPORTANT: Prevents pieces from shrinking */
-            height: 80px; background-repeat: no-repeat; 
-            border: 2px solid #333; border-radius: 8px; 
-            touch-action: none; background-color: #0d1117;
-        }
-        .tile.dragging {
-            position: fixed !important; z-index: 10000; pointer-events: none;
-            transform: scale(1.1); border: 2px solid var(--accent) !important;
-            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.9));
-        }
-        .tile.fixed { pointer-events: none; border: none; flex: none; width: 100%; height: 100%; }
-
-        /* Modals */
-        #start-modal { position: fixed; inset: 0; background: #0b0e14; z-index: 20000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .tutorial-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; width: 80%; max-width: 300px; font-size: 0.85rem; text-align: left; margin-bottom: 20px; border: 1px solid #333; }
-        #preview-img { width: 220px; height: 220px; border: 3px solid var(--accent); border-radius: 15px; margin-bottom: 20px; background-size: cover; background-color: #1e293b; }
-        .btn-play { padding: 18px 60px; background: var(--accent); color: #000; border-radius: 50px; border: none; font-weight: 800; font-size: 1.1rem; cursor: pointer; }
-
-        #eye-overlay { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; height: 340px; border: 3px solid var(--accent); z-index: 5000; background-size: cover; pointer-events: none; }
+        .hint-text { font-size: 0.85rem; color: #94a3b8; margin: 0 40px 20px; line-height: 1.4; }
     </style>
 </head>
 <body>
 
     <div id="start-modal">
-        <h2 style="color: var(--accent); margin-bottom: 15px;">HOW TO PLAY</h2>
-        <div class="tutorial-box">
-            <div>🎯 <b>Swipe</b> pieces at the bottom.</div>
-            <div>🎯 <b>Drag</b> them to the correct slot.</div>
-            <div>❤️ <b>Penalty:</b> Wrong drops cost 1 Heart.</div>
-        </div>
+        <h2 id="level-title">WORLD 1</h2>
         <div id="preview-img"></div>
-        <button class="btn-play" onclick="closeModal()">START LEVEL</button>
+        <p class="hint-text">Slide tiles to complete the image before you run out of moves!</p>
+        <button class="btn-play" id="main-btn" onclick="closeModal()">START</button>
     </div>
 
     <div class="header">
         <div id="heart-display">❤️❤️❤️❤️❤️</div>
-        <div id="heart-timer">FULL STAMINA</div>
+        <div id="heart-timer">Full Energy</div>
     </div>
 
-    <div class="controls">
-        <button class="icon-btn" ontouchstart="toggleEye(true)" ontouchend="toggleEye(false)" onmousedown="toggleEye(true)" onmouseup="toggleEye(false)">
-            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-            PREVIEW
-        </button>
-        <button class="icon-btn" onclick="triggerReset()">
-            <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-            RESET
-        </button>
+    <div class="stats-bar">
+        <div class="stat-box">
+            <span class="stat-label">MOVES</span>
+            <span id="moves-left" class="stat-value">--</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">TARGET</span>
+            <span id="target-moves" class="stat-value">--</span>
+        </div>
     </div>
 
     <div id="puzzle-board"></div>
 
-    <div class="tray-container">
-        <div class="tray-label">Swipe Pieces ⟷</div>
-        <div id="piece-tray"></div>
-    </div>
-
-    <div id="eye-overlay"></div>
-
     <script>
+        // --- GAME STATE ---
         let level = parseInt(localStorage.getItem('pandaLevel')) || 0;
         let lives = localStorage.getItem('pandaLives');
-        if (lives === null || isNaN(parseInt(lives))) { lives = 5; localStorage.setItem('pandaLives', 5); } else { lives = parseInt(lives); }
+        
+        // Fix for first-time players
+        if (lives === null || isNaN(parseInt(lives))) {
+            lives = 5;
+            localStorage.setItem('pandaLives', 5);
+        } else {
+            lives = parseInt(lives);
+        }
 
         let lastLoss = parseInt(localStorage.getItem('pandaLastLoss')) || Date.now();
-        const REFILL_MS = 30 * 60000;
+        const REFILL_MS = 30 * 60000; // 30 mins
+
+        // Level Balancing
+        const grid = level < 3 ? 3 : 4; 
+        const moveLimit = level < 3 ? 40 : 80;
+        let currentMoves = moveLimit;
+
         const images = ['image.png', 'image1.png', 'image2.png', 'image3.png', 'image4.png', 'image5.png'];
         const currentImg = `./${images[level % images.length]}`;
-        const grid = level < 3 ? 3 : 4;
-        const boardPx = 350;
+        let tiles = [];
 
         function init() {
-            refreshStamina();
-            document.getElementById('preview-img').style.backgroundImage = `url('${currentImg}')`;
+            updateUI();
             
+            // Setup Board
+            tiles = Array.from({length: grid * grid}, (_, i) => i);
+            shuffleBoard();
+            renderBoard();
+        }
+
+        function shuffleBoard() {
+            // Simulate random valid moves so the puzzle is 100% solvable
+            for (let i = 0; i < 200; i++) {
+                let emptyIdx = tiles.indexOf(grid * grid - 1);
+                let neighbors = getNeighbors(emptyIdx);
+                let rand = neighbors[Math.floor(Math.random() * neighbors.length)];
+                [tiles[emptyIdx], tiles[rand]] = [tiles[rand], tiles[emptyIdx]];
+            }
+        }
+
+        function getNeighbors(idx) {
+            let res = [];
+            let r = Math.floor(idx / grid), c = idx % grid;
+            if (r > 0) res.push(idx - grid);
+            if (r < grid - 1) res.push(idx + grid);
+            if (c > 0) res.push(idx - 1);
+            if (c < grid - 1) res.push(idx + 1);
+            return res;
+        }
+
+        function renderBoard() {
             const board = document.getElementById('puzzle-board');
             board.style.gridTemplateColumns = `repeat(${grid}, 1fr)`;
             board.innerHTML = '';
-            for(let i=0; i < grid*grid; i++) {
-                let s = document.createElement('div');
-                s.className = 'slot';
-                s.dataset.idx = i;
-                board.appendChild(s);
-            }
+            const boardPx = 360;
 
-            const tray = document.getElementById('piece-tray');
-            tray.innerHTML = '';
-            let pArr = Array.from({length: grid*grid}, (_, i) => i).sort(() => Math.random() - 0.5);
-            pArr.forEach(p => {
-                let t = document.createElement('div');
-                t.className = 'tile';
-                t.dataset.correct = p;
-                t.style.backgroundImage = `url('${currentImg}')`;
-                t.style.backgroundSize = `${boardPx}px ${boardPx}px`;
-                let r = Math.floor(p/grid), c = p%grid;
-                t.style.backgroundPosition = `-${c * (boardPx/grid)}px -${r * (boardPx/grid)}px`;
-                t.addEventListener('touchstart', dragStart);
-                t.addEventListener('touchmove', dragMove);
-                t.addEventListener('touchend', dragEnd);
-                tray.appendChild(t);
+            tiles.forEach((val, i) => {
+                const div = document.createElement('div');
+                div.className = 'tile' + (val === grid * grid - 1 ? ' empty' : '');
+                
+                if (val !== grid * grid - 1) {
+                    div.style.backgroundImage = `url('${currentImg}')`;
+                    div.style.backgroundSize = `${boardPx}px ${boardPx}px`;
+                    let r = Math.floor(val / grid), c = val % grid;
+                    div.style.backgroundPosition = `-${c * (boardPx/grid)}px -${r * (boardPx/grid)}px`;
+                }
+
+                div.onclick = () => handleMove(i);
+                board.appendChild(div);
             });
         }
 
-        function refreshStamina() {
+        function handleMove(idx) {
+            if (currentMoves <= 0 || lives <= 0) return;
+
+            let emptyIdx = tiles.indexOf(grid * grid - 1);
+            let neighbors = getNeighbors(emptyIdx);
+
+            if (neighbors.includes(idx)) {
+                [tiles[emptyIdx], tiles[idx]] = [tiles[idx], tiles[emptyIdx]];
+                currentMoves--;
+                document.getElementById('moves-left').innerText = currentMoves;
+                if(window.navigator.vibrate) window.navigator.vibrate(15);
+                renderBoard();
+                checkGameState();
+            }
+        }
+
+        function checkGameState() {
+            if (tiles.every((v, i) => v === i)) {
+                confetti();
+                setTimeout(() => {
+                    level++;
+                    localStorage.setItem('pandaLevel', level);
+                    location.reload();
+                }, 2000);
+            } else if (currentMoves <= 0) {
+                // FAIL STATE
+                lives--;
+                lastLoss = Date.now();
+                localStorage.setItem('pandaLives', lives);
+                localStorage.setItem('pandaLastLoss', lastLoss);
+                
+                document.getElementById('puzzle-board').style.animation = "shake 0.5s";
+                setTimeout(() => {
+                    alert("Out of moves! Heart lost.");
+                    location.reload();
+                }, 500);
+            }
+        }
+
+        function updateUI() {
+            // Heart Regeneration
             const now = Date.now();
             if (lives < 5) {
                 let regen = Math.floor((now - lastLoss) / REFILL_MS);
-                if (regen > 0) { lives = Math.min(5, lives + regen); lastLoss = now; }
+                if (regen > 0) {
+                    lives = Math.min(5, lives + regen);
+                    lastLoss = now;
+                    localStorage.setItem('pandaLives', lives);
+                }
             }
+
+            // Top Header
             document.getElementById('heart-display').innerText = '❤️'.repeat(lives) + '🖤'.repeat(5 - lives);
             
-            const startBtn = document.querySelector('.btn-play');
-            const remaining = REFILL_MS - (now - lastLoss);
-            const timeStr = `${Math.floor(remaining/60000)}:${Math.floor((remaining%60000)/1000).toString().padStart(2,'0')}`;
+            // Move Stats
+            document.getElementById('moves-left').innerText = currentMoves;
+            document.getElementById('target-moves').innerText = moveLimit;
+
+            // Modal
+            document.getElementById('level-title').innerText = `WORLD ${level + 1}`;
+            document.getElementById('preview-img').style.backgroundImage = `url('${currentImg}')`;
+
+            const startBtn = document.getElementById('main-btn');
+            const timerLabel = document.getElementById('heart-timer');
 
             if (lives <= 0) {
+                const remaining = REFILL_MS - (now - lastLoss);
+                const m = Math.floor(remaining / 60000);
+                const s = Math.floor((remaining % 60000) / 1000);
+                const timeStr = `${m}:${s < 10 ? '0' : ''}${s}`;
+                
                 startBtn.innerText = `WAIT ${timeStr}`;
-                startBtn.style.background = "#333";
-                document.getElementById('heart-timer').innerText = `NEXT LIFE IN: ${timeStr}`;
+                startBtn.classList.add('btn-disabled');
+                timerLabel.innerText = `REGENERATING: ${timeStr}`;
             } else {
                 startBtn.innerText = "START LEVEL";
-                startBtn.style.background = "var(--accent)";
-                document.getElementById('heart-timer').innerText = lives < 5 ? `NEXT LIFE IN: ${timeStr}` : "FULL STAMINA";
-            }
-            localStorage.setItem('pandaLives', lives);
-            localStorage.setItem('pandaLastLoss', lastLoss);
-        }
-
-        function triggerReset() {
-            if (confirm("Resetting costs 1 Heart. Continue?")) {
-                if (lives > 1) { lives--; localStorage.setItem('pandaLives', lives); location.reload(); }
-                else { alert("Not enough hearts!"); }
+                startBtn.classList.remove('btn-disabled');
+                timerLabel.innerText = lives < 5 ? "Regenerating..." : "Full Energy";
             }
         }
 
-        let active = null;
-        function dragStart(e) { if(lives > 0) active = e.target; }
-        function dragMove(e) {
-            if(!active) return;
-            e.preventDefault();
-            let touch = e.touches[0];
-            active.classList.add('dragging');
-            active.style.width = (boardPx/grid) + 'px';
-            active.style.height = (boardPx/grid) + 'px';
-            active.style.left = touch.clientX + 'px';
-            active.style.top = (touch.clientY - 70) + 'px';
-            active.style.marginLeft = `-${(boardPx/grid)/2}px`;
+        function closeModal() {
+            if (lives > 0) document.getElementById('start-modal').style.display = 'none';
         }
-
-        function dragEnd(e) {
-            if(!active) return;
-            active.classList.remove('dragging');
-            let t = e.changedTouches[0];
-            active.style.display = 'none';
-            let el = document.elementFromPoint(t.clientX, t.clientY - 70);
-            active.style.display = 'block';
-            let slot = el ? el.closest('.slot') : null;
-
-            if(slot && slot.dataset.idx == active.dataset.correct) {
-                active.className = 'tile fixed';
-                active.style.position = 'static'; active.style.margin = '0';
-                slot.appendChild(active);
-                if(document.querySelectorAll('.fixed').length == grid*grid) {
-                    confetti();
-                    setTimeout(() => { level++; localStorage.setItem('pandaLevel', level); location.reload(); }, 2000);
-                }
-            } else {
-                if(slot) { lives--; lastLoss = Date.now(); refreshStamina();
-                    document.getElementById('puzzle-board').style.animation = "shake 0.4s";
-                    setTimeout(() => document.getElementById('puzzle-board').style.animation = "", 400);
-                }
-                active.style.position = 'static'; active.style.margin = '0';
-                document.getElementById('piece-tray').appendChild(active);
-            }
-            active = null;
-        }
-
-        function closeModal() { if(lives > 0) document.getElementById('start-modal').style.display = 'none'; }
-        function toggleEye(s) { document.getElementById('eye-overlay').style.backgroundImage = `url('${currentImg}')`; document.getElementById('eye-overlay').style.display = s ? 'block' : 'none'; }
 
         window.onload = init;
-        setInterval(refreshStamina, 1000);
+        setInterval(updateUI, 1000);
     </script>
 </body>
 </html>
