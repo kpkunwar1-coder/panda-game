@@ -3,40 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest: Swipe Saga</title>
+    <title>Panda Quest: Tutorial Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --accent: #00f2ea; --bg: #0b0e14; --panel: #161b22; }
         body { 
             font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: white; 
             margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden;
-            touch-action: none; /* Prevents browser pull-to-refresh */
+            touch-action: none; 
         }
 
-        /* Top Bar */
-        .header { width: 100%; background: #000; padding: 15px 0; border-bottom: 1px solid #333; text-align: center; z-index: 100; }
-        #heart-display { font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 5px; }
+        /* Stats Bar */
+        .header { width: 100%; background: #000; padding: 15px 0; border-bottom: 1px solid #333; text-align: center; }
+        #heart-display { font-size: 1.5rem; letter-spacing: 5px; }
         #heart-timer { font-size: 0.7rem; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
 
-        /* Stats Row */
-        .stats-bar { display: flex; justify-content: space-around; width: 100%; max-width: 400px; margin: 20px 0; }
-        .stat-box { text-align: center; background: var(--panel); padding: 10px 20px; border-radius: 10px; border: 1px solid #333; min-width: 80px; }
-        .stat-label { font-size: 0.6rem; color: #94a3b8; display: block; margin-bottom: 2px; }
-        .stat-value { font-size: 1.2rem; font-weight: 800; color: var(--accent); }
+        .stats-bar { display: flex; justify-content: space-around; width: 100%; max-width: 400px; margin: 15px 0; }
+        .stat-box { text-align: center; background: var(--panel); padding: 8px 15px; border-radius: 10px; border: 1px solid #333; min-width: 80px; }
+        .stat-label { font-size: 0.55rem; color: #94a3b8; display: block; }
+        .stat-value { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
 
         /* Puzzle Board */
         #puzzle-board { 
-            display: grid; gap: 4px; width: 90vw; max-width: 360px; 
-            background: #1e293b; padding: 8px; border-radius: 12px;
+            display: grid; gap: 5px; width: 90vw; max-width: 360px; 
+            background: #1e293b; padding: 10px; border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            transition: transform 0.1s;
         }
         .tile { 
-            aspect-ratio: 1/1; background-repeat: no-repeat; border-radius: 4px;
+            aspect-ratio: 1/1; background-repeat: no-repeat; border-radius: 6px;
             transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1); 
             cursor: pointer; position: relative;
+            display: flex; align-items: flex-start; justify-content: flex-start;
+        }
+        /* Number Guide on Tiles */
+        .tile::after {
+            content: attr(data-num);
+            background: rgba(0,0,0,0.5);
+            color: white; font-size: 0.7rem; padding: 2px 5px;
+            border-bottom-right-radius: 4px; border-top-left-radius: 4px;
         }
         .tile.empty { background: #0f172a !important; cursor: default; border: 1px dashed #334155; }
+        .tile.empty::after { content: ""; }
         
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -44,14 +51,12 @@
             75% { transform: translateX(8px); }
         }
 
-        /* Modal UI */
+        /* Modal */
         #start-modal { position: fixed; inset: 0; background: #0b0e14; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        #preview-img { width: 200px; height: 200px; border: 3px solid var(--accent); border-radius: 12px; margin: 20px 0; background-size: cover; background-color: #1e293b; }
-        .btn-play { padding: 18px 60px; background: var(--accent); color: #000; border-radius: 50px; border: none; font-weight: 800; font-size: 1.1rem; min-width: 220px; cursor: pointer; transition: 0.3s; }
+        #preview-img { width: 180px; height: 180px; border: 3px solid var(--accent); border-radius: 12px; margin: 15px 0; background-size: cover; background-color: #1e293b; }
+        .btn-play { padding: 18px 60px; background: var(--accent); color: #000; border-radius: 50px; border: none; font-weight: 800; font-size: 1.1rem; min-width: 220px; cursor: pointer; }
         .btn-disabled { background: #334155 !important; color: #94a3b8 !important; pointer-events: none; }
-
-        .hint-text { font-size: 0.85rem; color: #94a3b8; margin: 0 40px 15px; line-height: 1.4; }
-        .tutorial-rules { font-size: 0.75rem; color: #5c6b7a; margin-bottom: 25px; }
+        .hint-text { font-size: 0.9rem; color: #fff; margin: 0 40px 10px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -59,9 +64,8 @@
     <div id="start-modal">
         <h2 id="level-title">WORLD 1</h2>
         <div id="preview-img"></div>
-        <p class="hint-text"><b>Tap</b> or <b>Swipe</b> tiles to slide them into the empty space.</p>
-        <div class="tutorial-rules">Finish before moves hit 0 or lose 1 ❤️</div>
-        <button class="btn-play" id="main-btn" onclick="closeModal()">START LEVEL</button>
+        <p class="hint-text" id="tutorial-msg">Tutorial: Slide the pieces to fix the Panda!</p>
+        <button class="btn-play" id="main-btn" onclick="closeModal()">START</button>
     </div>
 
     <div class="header">
@@ -71,37 +75,36 @@
 
     <div class="stats-bar">
         <div class="stat-box">
-            <span class="stat-label">MOVES LEFT</span>
+            <span class="stat-label">MOVES</span>
             <span id="moves-left" class="stat-value">--</span>
         </div>
         <div class="stat-box">
-            <span class="stat-label">TARGET</span>
-            <span id="target-moves" class="stat-value">--</span>
+            <span class="stat-label">GRID</span>
+            <span id="grid-size" class="stat-value">--</span>
         </div>
     </div>
 
     <div id="puzzle-board"></div>
 
     <script>
-        // --- GAME STATE & CONFIG ---
         let level = parseInt(localStorage.getItem('pandaLevel')) || 0;
-        let lives = localStorage.getItem('pandaLives');
-        
-        if (lives === null || isNaN(parseInt(lives))) {
-            lives = 5;
-            localStorage.setItem('pandaLives', 5);
-        } else {
-            lives = parseInt(lives);
+        let lives = localStorage.getItem('pandaLives') === null ? 5 : parseInt(localStorage.getItem('pandaLives'));
+        let lastLoss = parseInt(localStorage.getItem('pandaLastLoss')) || Date.now();
+        const REFILL_MS = 30 * 60000;
+
+        // --- DIFFICULTY SCALING ---
+        let grid = 3;
+        let moveLimit = 40;
+
+        if (level === 0) { 
+            grid = 2; moveLimit = 15; // Tutorial Level
+        } else if (level < 4) { 
+            grid = 3; moveLimit = 50; // Beginner
+        } else { 
+            grid = 4; moveLimit = 100; // Pro
         }
 
-        let lastLoss = parseInt(localStorage.getItem('pandaLastLoss')) || Date.now();
-        const REFILL_MS = 30 * 60000; 
-
-        // Difficulty Tuning
-        const grid = level < 3 ? 3 : 4; 
-        const moveLimit = level < 3 ? 40 : 80;
         let currentMoves = moveLimit;
-
         const images = ['image.png', 'image1.png', 'image2.png', 'image3.png', 'image4.png', 'image5.png'];
         const currentImg = `./${images[level % images.length]}`;
         let tiles = [];
@@ -109,14 +112,15 @@
 
         function init() {
             updateUI();
+            if(level === 0) document.getElementById('tutorial-msg').innerText = "TUTORIAL: A simple 2x2 grid to help you learn!";
             tiles = Array.from({length: grid * grid}, (_, i) => i);
             shuffleSolvable();
             renderBoard();
         }
 
-        // Shuffle by simulating valid moves so the puzzle is always solvable
         function shuffleSolvable() {
-            for (let i = 0; i < 200; i++) {
+            let moves = level === 0 ? 10 : 150; // Shorter shuffle for tutorial
+            for (let i = 0; i < moves; i++) {
                 let emptyIdx = tiles.indexOf(grid * grid - 1);
                 let neighbors = getNeighbors(emptyIdx);
                 let rand = neighbors[Math.floor(Math.random() * neighbors.length)];
@@ -143,6 +147,7 @@
             tiles.forEach((val, i) => {
                 const div = document.createElement('div');
                 div.className = 'tile' + (val === grid * grid - 1 ? ' empty' : '');
+                div.setAttribute('data-num', val + 1); // Guide numbers
                 
                 if (val !== grid * grid - 1) {
                     div.style.backgroundImage = `url('${currentImg}')`;
@@ -150,23 +155,15 @@
                     let r = Math.floor(val / grid), c = val % grid;
                     div.style.backgroundPosition = `-${c * (boardPx/grid)}px -${r * (boardPx/grid)}px`;
 
-                    // SWIPE GESTURES
-                    div.addEventListener('touchstart', (e) => {
-                        tStartX = e.touches[0].clientX;
-                        tStartY = e.touches[0].clientY;
-                    }, {passive: true});
-
+                    div.addEventListener('touchstart', (e) => { tStartX = e.touches[0].clientX; tStartY = e.touches[0].clientY; }, {passive: true});
                     div.addEventListener('touchend', (e) => {
                         let dx = e.changedTouches[0].clientX - tStartX;
                         let dy = e.changedTouches[0].clientY - tStartY;
-                        if (Math.abs(dx) > 30 || Math.abs(dy) > 30) {
-                            handleSwipe(i, dx, dy);
-                        } else {
-                            handleMove(i);
-                        }
+                        if (Math.abs(dx) > 30 || Math.abs(dy) > 30) handleSwipe(i, dx, dy);
+                        else handleMove(i);
                     });
                 }
-                div.onclick = () => handleMove(i); // Mouse fallback
+                div.onclick = () => handleMove(i);
                 board.appendChild(div);
             });
         }
@@ -175,14 +172,13 @@
             let emptyIdx = tiles.indexOf(grid * grid - 1);
             let r = Math.floor(idx / grid), c = idx % grid;
             let er = Math.floor(emptyIdx / grid), ec = emptyIdx % grid;
-
             let valid = false;
-            if (Math.abs(dx) > Math.abs(dy)) { // Horizontal
-                if (dx > 0 && er === r && ec === c + 1) valid = true; // Swipe Right
-                if (dx < 0 && er === r && ec === c - 1) valid = true; // Swipe Left
-            } else { // Vertical
-                if (dy > 0 && ec === c && er === r + 1) valid = true; // Swipe Down
-                if (dy < 0 && ec === c && er === r - 1) valid = true; // Swipe Up
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 0 && er === r && ec === c + 1) valid = true;
+                if (dx < 0 && er === r && ec === c - 1) valid = true;
+            } else {
+                if (dy > 0 && ec === c && er === r + 1) valid = true;
+                if (dy < 0 && ec === c && er === r - 1) valid = true;
             }
             if (valid) handleMove(idx);
         }
@@ -196,25 +192,15 @@
                 document.getElementById('moves-left').innerText = currentMoves;
                 if(window.navigator.vibrate) window.navigator.vibrate(15);
                 renderBoard();
-                checkGameState();
-            }
-        }
-
-        function checkGameState() {
-            if (tiles.every((v, i) => v === i)) {
-                confetti();
-                setTimeout(() => {
-                    level++;
-                    localStorage.setItem('pandaLevel', level);
-                    location.reload();
-                }, 2000);
-            } else if (currentMoves <= 0) {
-                lives--;
-                lastLoss = Date.now();
-                localStorage.setItem('pandaLives', lives);
-                localStorage.setItem('pandaLastLoss', lastLoss);
-                document.getElementById('puzzle-board').style.animation = "shake 0.5s";
-                setTimeout(() => { alert("No moves left! Heart lost."); location.reload(); }, 500);
+                if (tiles.every((v, i) => v === i)) {
+                    confetti();
+                    setTimeout(() => { level++; localStorage.setItem('pandaLevel', level); location.reload(); }, 2000);
+                } else if (currentMoves <= 0) {
+                    lives--; lastLoss = Date.now();
+                    localStorage.setItem('pandaLives', lives); localStorage.setItem('pandaLastLoss', lastLoss);
+                    document.getElementById('puzzle-board').style.animation = "shake 0.5s";
+                    setTimeout(() => { alert("No moves left!"); location.reload(); }, 500);
+                }
             }
         }
 
@@ -222,41 +208,28 @@
             const now = Date.now();
             if (lives < 5) {
                 let regen = Math.floor((now - lastLoss) / REFILL_MS);
-                if (regen > 0) {
-                    lives = Math.min(5, lives + regen);
-                    lastLoss = now;
-                    localStorage.setItem('pandaLives', lives);
-                }
+                if (regen > 0) { lives = Math.min(5, lives + regen); lastLoss = now; localStorage.setItem('pandaLives', lives); }
             }
-
             document.getElementById('heart-display').innerText = '❤️'.repeat(lives) + '🖤'.repeat(5 - lives);
             document.getElementById('moves-left').innerText = currentMoves;
-            document.getElementById('target-moves').innerText = moveLimit;
-            document.getElementById('level-title').innerText = `WORLD ${level + 1}`;
+            document.getElementById('grid-size').innerText = `${grid}x${grid}`;
+            document.getElementById('level-title').innerText = level === 0 ? "TUTORIAL" : `WORLD ${level}`;
             document.getElementById('preview-img').style.backgroundImage = `url('${currentImg}')`;
 
             const startBtn = document.getElementById('main-btn');
             const timerLabel = document.getElementById('heart-timer');
-
             if (lives <= 0) {
-                const remaining = REFILL_MS - (now - lastLoss);
-                const m = Math.floor(remaining / 60000);
-                const s = Math.floor((remaining % 60000) / 1000);
-                const timeStr = `${m}:${s < 10 ? '0' : ''}${s}`;
-                startBtn.innerText = `WAIT ${timeStr}`;
-                startBtn.classList.add('btn-disabled');
-                timerLabel.innerText = `NEXT LIFE IN: ${timeStr}`;
+                const rem = REFILL_MS - (now - lastLoss);
+                const timeStr = `${Math.floor(rem/60000)}:${Math.floor((rem%60000)/1000).toString().padStart(2,'0')}`;
+                startBtn.innerText = `WAIT ${timeStr}`; startBtn.classList.add('btn-disabled');
+                timerLabel.innerText = `REFREASHING: ${timeStr}`;
             } else {
-                startBtn.innerText = "START LEVEL";
-                startBtn.classList.remove('btn-disabled');
-                timerLabel.innerText = lives < 5 ? "Regenerating Hearts..." : "Full Energy";
+                startBtn.innerText = "START LEVEL"; startBtn.classList.remove('btn-disabled');
+                timerLabel.innerText = lives < 5 ? "Charging..." : "Full Energy";
             }
         }
 
-        function closeModal() {
-            if (lives > 0) document.getElementById('start-modal').style.display = 'none';
-        }
-
+        function closeModal() { if (lives > 0) document.getElementById('start-modal').style.display = 'none'; }
         window.onload = init;
         setInterval(updateUI, 1000);
     </script>
