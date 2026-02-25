@@ -3,90 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest: Pro Edition</title>
+    <title>Panda Quest: Tactile Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --accent: #00f2ea; --secondary: #ff00ff; --bg: #0b0e14; }
         body { 
             font-family: 'Inter', sans-serif; text-align: center; 
-            background: radial-gradient(circle at top, #1e293b 0%, #0b0e14 100%);
-            color: white; margin: 0; padding: 10px; min-height: 100vh;
-            display: flex; flex-direction: column; align-items: center;
+            background: #0b0e14; color: white; margin: 0; padding: 10px; 
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
             touch-action: none; overflow: hidden;
         }
 
-        /* Level Selector Slider */
+        /* Level Selector */
         .level-slider {
             display: flex; gap: 8px; overflow-x: auto; width: 95vw; 
-            padding: 10px 0; margin-bottom: 10px; scrollbar-width: none;
+            padding: 15px 0; scrollbar-width: none;
         }
-        .level-slider::-webkit-scrollbar { display: none; }
         .level-dot {
             min-width: 35px; height: 35px; background: rgba(255,255,255,0.05);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            border: 1px solid rgba(255,255,255,0.1); font-size: 0.7rem; color: #64748b;
+            border: 1px solid rgba(255,255,255,0.1); font-size: 0.7rem;
         }
-        .level-dot.active { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(0,242,234,0.3); }
+        .level-dot.active { border-color: var(--accent); color: var(--accent); background: rgba(0,242,234,0.1); }
 
-        h1 { font-size: 1.2rem; letter-spacing: 2px; margin: 5px 0; text-transform: uppercase; }
-
-        /* Controls */
-        .controls { display: flex; gap: 10px; margin: 10px 0; }
+        /* Controls - Sleeker Style */
+        .controls { display: flex; gap: 10px; margin: 15px 0; }
         .btn-tool { 
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2);
-            color: white; padding: 8px 15px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 10px 20px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
         }
-        .btn-reset { border-color: #f87171; color: #f87171; }
+        .btn-reset { border-color: #ef4444; color: #ef4444; }
 
-        /* The Board */
+        /* The Board - Dark & Challenging */
         #puzzle-board { 
-            display: grid; gap: 2px; width: 90vw; max-width: 340px; 
-            background: rgba(0,0,0,0.5); padding: 5px; border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;
+            display: grid; gap: 2px; width: 90vw; max-width: 350px; 
+            background: #1e293b; padding: 4px; border-radius: 8px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         }
         .slot { 
-            aspect-ratio: 1/1; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);
-            background-repeat: no-repeat; overflow: hidden;
+            aspect-ratio: 1/1; background: #0f172a; border-radius: 2px;
+            border: 1px solid rgba(255,255,255,0.03);
         }
 
-        /* The Horizontal Piece Slider */
+        /* The Piece Tray - Like the reference app */
         .tray-container {
-            width: 100vw; background: rgba(0,0,0,0.6); 
-            padding: 20px 0; position: fixed; bottom: 0;
+            width: 100vw; background: #161b22; 
+            padding: 25px 0; position: fixed; bottom: 0;
             border-top: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
         }
         #piece-tray { 
-            display: flex; gap: 15px; overflow-x: scroll; 
-            padding: 0 25px; width: auto; scrollbar-width: none;
+            display: flex; gap: 20px; overflow-x: scroll; 
+            padding: 0 30px; scrollbar-width: none;
         }
-        #piece-tray::-webkit-scrollbar { display: none; }
 
         .tile { 
-            flex: 0 0 auto; aspect-ratio: 1/1; border-radius: 6px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            background-repeat: no-repeat; border: 1px solid rgba(255,255,255,0.2);
-            transition: transform 0.1s;
+            flex: 0 0 auto; aspect-ratio: 1/1; border-radius: 4px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+            background-repeat: no-repeat; border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* This is the "Floating" piece style when dragging */
+        .dragging {
+            position: fixed !important;
+            transform: scale(1.2) translateY(-60px) !important; /* Lifts it above the thumb */
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            border: 2px solid var(--accent) !important;
         }
 
         #preview-overlay {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80vw; height: 80vw; max-width: 320px; border: 2px solid var(--accent);
-            border-radius: 10px; z-index: 2000; background-size: cover; box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            width: 85vw; max-width: 340px; aspect-ratio: 1/1; border: 2px solid var(--accent);
+            border-radius: 12px; z-index: 2000; background-size: cover;
         }
 
         .next-btn { 
-            position: fixed; top: 45%; padding: 15px 40px; 
-            background: var(--accent); color: var(--bg); 
+            position: fixed; top: 40%; padding: 16px 45px; 
+            background: var(--accent); color: #000; 
             border: none; border-radius: 50px; font-weight: 800; 
-            display: none; z-index: 3000; box-shadow: 0 0 30px var(--accent);
+            display: none; z-index: 3000;
         }
     </style>
 </head>
 <body>
 
     <div class="level-slider" id="levelSlider"></div>
-    <h1>PANDA QUEST</h1>
+    <h2 style="font-size: 1rem; letter-spacing: 3px; margin: 0;">PANDA QUEST</h2>
     
     <div class="controls">
         <button class="btn-tool" onmousedown="showFull(true)" onmouseup="showFull(false)" ontouchstart="showFull(true)" ontouchend="showFull(false)">👁️ PREVIEW</button>
@@ -109,7 +112,6 @@
         const levels = Array.from({length: 12}, (_, i) => i === 0 ? 'image.png' : `image${i + 1}.png`);
 
         function initLevel() {
-            // Level Slider Update
             const slider = document.getElementById('levelSlider');
             slider.innerHTML = '';
             levels.forEach((_, i) => {
@@ -122,7 +124,6 @@
             gridSize = currentLevel < 4 ? 3 : (currentLevel < 8 ? 4 : 5);
             const board = document.getElementById('puzzle-board');
             const tray = document.getElementById('piece-tray');
-            
             const boardWidth = Math.min(window.innerWidth * 0.9, 340);
             const tileSize = boardWidth / gridSize;
             
@@ -131,23 +132,14 @@
             board.innerHTML = ''; tray.innerHTML = '';
             document.getElementById('nextLevelBtn').style.display = 'none';
 
-            // Create Slots with Ghost Background
+            // Empty slots WITHOUT ghost image
             for(let i=0; i < gridSize * gridSize; i++) {
                 const slot = document.createElement('div');
                 slot.className = 'slot';
                 slot.dataset.index = i;
-                
-                // Ghost Image Logic
-                slot.style.backgroundImage = `url('./${levels[currentLevel]}')`;
-                slot.style.backgroundSize = `${boardWidth}px ${boardWidth}px`;
-                let sRow = Math.floor(i / gridSize), sCol = i % gridSize;
-                slot.style.backgroundPosition = `-${sCol * tileSize}px -${sRow * tileSize}px`;
-                slot.style.opacity = "0.1"; // Faint guide
-                
                 board.appendChild(slot);
             }
 
-            // Create Shuffled Pieces
             let pieces = Array.from({length: gridSize * gridSize}, (_, i) => i);
             pieces.sort(() => Math.random() - 0.5);
 
@@ -156,15 +148,12 @@
                 tile.className = 'tile';
                 tile.dataset.correctIndex = p;
                 
-                // Sizing tiles for the tray
-                const trayTileSize = Math.floor(boardWidth / 4); 
-                tile.style.width = trayTileSize + 'px';
-                tile.style.height = trayTileSize + 'px';
-                
+                const traySize = Math.floor(boardWidth / 3.5);
+                tile.style.width = traySize + 'px';
+                tile.style.height = traySize + 'px';
                 tile.style.backgroundImage = `url('./${levels[currentLevel]}')`;
                 tile.style.backgroundSize = `${boardWidth}px ${boardWidth}px`;
                 
-                // Perfect Pixel Cutting
                 let row = Math.floor(p / gridSize);
                 let col = p % gridSize;
                 tile.style.backgroundPosition = `-${col * tileSize}px -${row * tileSize}px`;
@@ -176,26 +165,34 @@
             });
         }
 
-        // --- Drag & Drop Logic ---
         let activeTile = null;
-        let isDragging = false;
+        let originalParent = null;
 
-        function touchStart(e) { activeTile = e.target; isDragging = false; }
+        function touchStart(e) {
+            activeTile = e.target;
+            originalParent = activeTile.parentElement;
+        }
 
         function touchMove(e) {
             if (!activeTile) return;
-            isDragging = true;
+            e.preventDefault();
             let touch = e.touches[0];
-            activeTile.style.position = 'fixed';
-            activeTile.style.width = (340 / gridSize) + 'px'; // Scale to board size while dragging
-            activeTile.style.left = (touch.clientX - activeTile.offsetWidth/2) + 'px';
-            activeTile.style.top = (touch.clientY - activeTile.offsetHeight/2) + 'px';
-            activeTile.style.zIndex = "5000";
+            
+            activeTile.classList.add('dragging');
+            activeTile.style.width = (340 / gridSize) + 'px';
+            activeTile.style.height = (340 / gridSize) + 'px';
+            activeTile.style.left = touch.clientX + 'px';
+            activeTile.style.top = touch.clientY + 'px';
+            // Center the tile above the touch point
+            activeTile.style.marginLeft = -(340 / gridSize / 2) + 'px';
+            activeTile.style.marginTop = -(340 / gridSize / 2) + 'px';
         }
 
         function touchEnd(e) {
             if (!activeTile) return;
-            if (!isDragging) { activeTile = null; return; }
+            activeTile.classList.remove('dragging');
+            activeTile.style.marginLeft = "0";
+            activeTile.style.marginTop = "0";
 
             let touch = e.changedTouches[0];
             activeTile.style.display = 'none';
@@ -209,13 +206,12 @@
                 activeTile.style.width = '100%';
                 activeTile.style.height = '100%';
                 slot.appendChild(activeTile);
-                slot.style.opacity = "1"; // Reveal full color
-                if(window.navigator.vibrate) window.navigator.vibrate(20);
                 checkWin();
             } else {
                 activeTile.style.position = 'static';
-                activeTile.style.width = Math.floor(340 / 4) + 'px';
-                activeTile.style.height = Math.floor(340 / 4) + 'px';
+                const traySize = Math.floor(340 / 3.5);
+                activeTile.style.width = traySize + 'px';
+                activeTile.style.height = traySize + 'px';
                 document.getElementById('piece-tray').appendChild(activeTile);
             }
             activeTile = null;
@@ -231,7 +227,7 @@
                 }
             });
             if(filled === gridSize * gridSize && correct === filled) {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                confetti();
                 document.getElementById('nextLevelBtn').style.display = 'block';
             }
         }
@@ -253,7 +249,6 @@
 
         function nextLevel() {
             currentLevel++;
-            if (currentLevel >= levels.length) currentLevel = 0;
             localStorage.setItem('pandaLevel', currentLevel);
             initLevel();
         }
