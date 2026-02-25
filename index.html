@@ -3,242 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest: Saga Edition</title>
+    <title>Panda Quest: Saga</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --accent: #00f2ea; --bg: #0b0e14; --panel: #161b22; }
         body { 
-            font-family: 'Inter', sans-serif; background: var(--bg); color: white; 
-            margin: 0; padding: 10px; min-height: 100vh; overflow: hidden;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: white; 
+            margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
             display: flex; flex-direction: column; align-items: center; touch-action: none;
         }
 
-        /* Hearts & Stamina */
-        .stats-bar { display: flex; flex-direction: column; align-items: center; margin: 10px 0; }
-        #heart-display { font-size: 1.5rem; letter-spacing: 5px; filter: drop-shadow(0 0 5px rgba(255,0,0,0.5)); }
-        #heart-timer { font-size: 0.7rem; color: #94a3b8; margin-top: 5px; font-weight: bold; }
+        /* Top Bar: Hearts & Slider */
+        .header { width: 100%; padding: 10px 0; background: #000; border-bottom: 1px solid #30363d; z-index: 100; }
+        .stats { display: flex; justify-content: center; gap: 15px; font-size: 1.2rem; margin-bottom: 5px; }
+        .timer { font-size: 0.7rem; color: #94a3b8; text-align: center; }
+        
+        .level-slider { display: flex; gap: 10px; overflow-x: auto; padding: 10px; scrollbar-width: none; justify-content: flex-start; }
+        .level-dot { min-width: 30px; height: 30px; border-radius: 50%; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 1px solid #334155; }
+        .level-dot.active { border-color: var(--accent); color: var(--accent); background: rgba(0,242,234,0.1); }
 
-        /* The Board */
+        /* Icons Control */
+        .controls { display: flex; gap: 25px; margin: 15px 0; }
+        .icon-btn { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; font-size: 0.6rem; gap: 4px; cursor: pointer; }
+        .icon-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+        /* The Board Fix */
         #puzzle-board { 
             display: grid; gap: 2px; width: 90vw; max-width: 350px; 
-            background: #1e293b; padding: 6px; border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #1e293b; padding: 6px; border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;
         }
-        .slot { aspect-ratio: 1/1; background: #0f172a; border-radius: 4px; position: relative; }
+        .slot { aspect-ratio: 1/1; background: #0f172a; border-radius: 2px; }
 
-        /* Tiles */
-        .tile { flex: 0 0 auto; background-repeat: no-repeat; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+        /* Pieces & Dragging */
+        .tile { flex: 0 0 auto; background-repeat: no-repeat; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; }
         .tile.dragging {
             position: fixed !important; z-index: 10000; pointer-events: none;
-            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.7));
-            border: 2px solid var(--accent) !important;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.6));
+            transform: scale(1.1);
         }
-        .tile.fixed { pointer-events: none; border: none; z-index: 1; }
+        .tile.fixed { pointer-events: none; border: none; }
 
-        /* Tray & UI */
-        .tray-container { width: 100vw; background: var(--panel); padding: 20px 0; position: fixed; bottom: 0; border-top: 1px solid #30363d; }
-        #piece-tray { display: flex; gap: 15px; overflow-x: scroll; padding: 0 30px; scrollbar-width: none; min-height: 90px; }
+        /* Sliding Tray */
+        .tray-outer { width: 100vw; background: var(--panel); position: fixed; bottom: 0; padding: 20px 0; border-top: 1px solid #30363d; }
+        #piece-tray { display: flex; gap: 15px; overflow-x: auto; padding: 0 30px; scrollbar-width: none; min-height: 80px; align-items: center; }
 
-        /* Story/Start Modal */
-        #start-modal {
-            position: fixed; inset: 0; background: rgba(11, 14, 20, 0.98);
-            z-index: 9000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
-        }
-        #goal-preview { width: 280px; height: 280px; border-radius: 20px; border: 4px solid var(--accent); background-size: cover; margin-bottom: 25px; box-shadow: 0 0 30px rgba(0,242,234,0.3); }
-        .btn-main { padding: 18px 60px; background: var(--accent); color: black; border-radius: 50px; font-weight: 800; border: none; font-size: 1.2rem; cursor: pointer; transition: transform 0.2s; }
-        .btn-main:active { transform: scale(0.95); }
+        /* Modals */
+        #start-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #preview-img { width: 250px; height: 250px; border: 3px solid var(--accent); border-radius: 10px; margin: 20px 0; background-size: cover; }
+        .btn-play { padding: 15px 50px; background: var(--accent); color: black; border-radius: 50px; border: none; font-weight: bold; font-size: 1.1rem; }
+
+        #overlay { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; height: 340px; border: 2px solid var(--accent); z-index: 5000; background-size: cover; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <div id="start-modal">
-        <h1 id="modal-title" style="margin-bottom: 10px;">LEVEL READY</h1>
-        <p id="modal-desc" style="color: #94a3b8; margin-bottom: 20px;">Study the image carefully!</p>
-        <div id="goal-preview"></div>
-        <button class="btn-main" id="start-action-btn" onclick="startGame()">START</button>
+    <div class="header">
+        <div class="stats" id="heart-display">❤️❤️❤️❤️❤️</div>
+        <div class="timer" id="heart-timer">FULL STAMINA</div>
+        <div class="level-slider" id="level-slider"></div>
     </div>
 
-    <div class="stats-bar">
-        <div id="heart-display">❤️❤️❤️❤️❤️</div>
-        <div id="heart-timer">FULL</div>
+    <div class="controls">
+        <button class="icon-btn" ontouchstart="showEye(true)" ontouchend="showEye(false)">
+            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            PREVIEW
+        </button>
+        <button class="icon-btn" onclick="location.reload()">
+            <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            RESET
+        </button>
     </div>
 
     <div id="puzzle-board"></div>
 
-    <div class="tray-container">
+    <div class="tray-outer">
         <div id="piece-tray"></div>
     </div>
 
-    <button id="nextLevelBtn" class="btn-main" style="display:none; position:fixed; top:45%; z-index:10001;" onclick="nextLevel()">NEXT LEVEL →</button>
+    <div id="start-modal">
+        <h2>LEVEL GOAL</h2>
+        <div id="preview-img"></div>
+        <button class="btn-play" id="start-btn" onclick="closeModal()">START PUZZLE</button>
+    </div>
+
+    <div id="overlay"></div>
 
     <script>
-        // --- STAMINA SYSTEM ---
-        const MAX_LIVES = 5;
-        const REFILL_TIME = 30 * 60 * 1000; 
-        let lives = parseInt(localStorage.getItem('pandaLives')) ?? MAX_LIVES;
+        // LIVES SYSTEM
+        let lives = parseInt(localStorage.getItem('pandaLives')) ?? 5;
         let lastLoss = parseInt(localStorage.getItem('pandaLastLoss')) || Date.now();
+        const REFILL_MINS = 30;
 
-        function updateStamina() {
-            if (lives < MAX_LIVES) {
-                const now = Date.now();
-                const diff = now - lastLoss;
-                const regenerated = Math.floor(diff / REFILL_TIME);
-                if (regenerated > 0) {
-                    lives = Math.min(MAX_LIVES, lives + regenerated);
-                    lastLoss = now;
-                    saveStamina();
+        function updateLives() {
+            if (lives < 5) {
+                let passed = Date.now() - lastLoss;
+                let regen = Math.floor(passed / (REFILL_MINS * 60000));
+                if (regen > 0) {
+                    lives = Math.min(5, lives + regen);
+                    lastLoss = Date.now();
                 }
             }
-            renderStamina();
+            document.getElementById('heart-display').innerText = '❤️'.repeat(lives) + '🖤'.repeat(5 - lives);
+            save();
         }
 
-        function renderStamina() {
-            document.getElementById('heart-display').innerText = '❤️'.repeat(lives) + '🖤'.repeat(MAX_LIVES - lives);
-            const timerEl = document.getElementById('heart-timer');
-            if (lives < MAX_LIVES) {
-                const rem = REFILL_TIME - (Date.now() - lastLoss);
-                const m = Math.floor(rem / 60000);
-                const s = Math.floor((rem % 60000) / 1000);
-                timerEl.innerText = `REGEN IN: ${m}:${s < 10 ? '0' : ''}${s}`;
-            } else { timerEl.innerText = "FULL STAMINA"; }
-        }
-
-        function saveStamina() {
+        function save() {
             localStorage.setItem('pandaLives', lives);
             localStorage.setItem('pandaLastLoss', lastLoss);
         }
 
-        function loseLife() {
-            if (lives > 0) {
-                if (lives === MAX_LIVES) lastLoss = Date.now();
-                lives--;
-                saveStamina();
-                if(window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
-            }
-        }
+        // PUZZLE LOGIC
+        let level = parseInt(localStorage.getItem('pandaLevel')) || 0;
+        const imgs = ['image.png', 'image1.png', 'image2.png', 'image3.png', 'image4.png', 'image5.png'];
+        let boardSize = 350;
+        let grid = level < 3 ? 3 : 4;
 
-        // --- GAME LOGIC ---
-        let currentLevel = parseInt(localStorage.getItem('pandaLevel')) || 0;
-        const levels = Array.from({length: 12}, (_, i) => i === 0 ? 'image.png' : `image${i + 1}.png`);
-        let boardWidth = Math.min(window.innerWidth * 0.9, 350);
-
-        function initLevel() {
-            if (lives <= 0) {
-                document.getElementById('start-action-btn').style.opacity = "0.5";
-                document.getElementById('start-action-btn').innerText = "WAIT FOR LIVES";
+        function init() {
+            updateLives();
+            const slider = document.getElementById('level-slider');
+            slider.innerHTML = '';
+            for(let i=0; i<9; i++) {
+                slider.innerHTML += `<div class="level-dot ${i==level?'active':''}"> ${i+1} </div>`;
             }
-            
-            document.getElementById('goal-preview').style.backgroundImage = `url('./${levels[currentLevel]}')`;
-            document.getElementById('start-modal').style.display = 'flex';
-            
-            const gridSize = currentLevel < 4 ? 3 : (currentLevel < 8 ? 4 : 5);
+
+            document.getElementById('preview-img').style.backgroundImage = `url('./${imgs[level % imgs.length]}')`;
             const board = document.getElementById('puzzle-board');
             const tray = document.getElementById('piece-tray');
-            const tileSize = boardWidth / gridSize;
-
-            board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            board.style.gridTemplateColumns = `repeat(${grid}, 1fr)`;
             board.innerHTML = ''; tray.innerHTML = '';
-            document.getElementById('nextLevelBtn').style.display = 'none';
 
-            for(let i=0; i < gridSize * gridSize; i++) {
-                const slot = document.createElement('div');
+            for(let i=0; i < grid*grid; i++) {
+                let slot = document.createElement('div');
                 slot.className = 'slot';
-                slot.dataset.index = i;
+                slot.dataset.idx = i;
                 board.appendChild(slot);
             }
 
-            let pieces = Array.from({length: gridSize * gridSize}, (_, i) => i);
-            pieces.sort(() => Math.random() - 0.5);
-
-            pieces.forEach(p => {
-                const tile = document.createElement('div');
+            let pArr = Array.from({length: grid*grid}, (_, i) => i).sort(() => Math.random() - 0.5);
+            pArr.forEach(p => {
+                let tile = document.createElement('div');
                 tile.className = 'tile';
-                tile.dataset.correctIndex = p;
-                tile.style.width = (boardWidth / 4) + 'px';
-                tile.style.height = (boardWidth / 4) + 'px';
-                tile.style.backgroundImage = `url('./${levels[currentLevel]}')`;
-                tile.style.backgroundSize = `${boardWidth}px ${boardWidth}px`;
-                let row = Math.floor(p / gridSize), col = p % gridSize;
-                tile.style.backgroundPosition = `-${col * tileSize}px -${row * tileSize}px`;
-
-                tile.addEventListener('touchstart', touchStart);
-                tile.addEventListener('touchmove', touchMove);
-                tile.addEventListener('touchend', touchEnd);
+                tile.dataset.correct = p;
+                tile.style.width = '70px'; tile.style.height = '70px';
+                tile.style.backgroundImage = `url('./${imgs[level % imgs.length]}')`;
+                tile.style.backgroundSize = `${boardSize}px ${boardSize}px`;
+                let r = Math.floor(p/grid), c = p%grid;
+                tile.style.backgroundPosition = `-${c * (boardSize/grid)}px -${r * (boardSize/grid)}px`;
+                
+                tile.addEventListener('touchstart', startDrag);
+                tile.addEventListener('touchmove', moveDrag);
+                tile.addEventListener('touchend', endDrag);
                 tray.appendChild(tile);
             });
         }
 
-        function startGame() {
-            if (lives > 0) document.getElementById('start-modal').style.display = 'none';
-        }
-
-        let activeTile = null;
-        function touchStart(e) { if(!e.target.classList.contains('fixed')) activeTile = e.target; }
-
-        function touchMove(e) {
-            if (!activeTile) return;
+        let active = null;
+        function startDrag(e) { active = e.target; }
+        function moveDrag(e) {
+            if(!active) return;
             e.preventDefault();
-            let touch = e.touches[0];
-            let gridSize = currentLevel < 4 ? 3 : (currentLevel < 8 ? 4 : 5);
-            let tSize = boardWidth / gridSize;
-
-            activeTile.classList.add('dragging');
-            activeTile.style.width = tSize + 'px';
-            activeTile.style.height = tSize + 'px';
-            activeTile.style.left = touch.clientX + 'px';
-            activeTile.style.top = (touch.clientY - 60) + 'px'; // Finger Offset
-            activeTile.style.marginLeft = -(tSize / 2) + 'px';
-            activeTile.style.marginTop = -(tSize / 2) + 'px';
+            let t = e.touches[0];
+            active.classList.add('dragging');
+            active.style.width = (boardSize/grid) + 'px';
+            active.style.height = (boardSize/grid) + 'px';
+            active.style.left = t.clientX + 'px';
+            active.style.top = (t.clientY - 60) + 'px';
+            active.style.marginLeft = `-${(boardSize/grid)/2}px`;
         }
 
-        function touchEnd(e) {
-            if (!activeTile) return;
-            activeTile.classList.remove('dragging');
-            let touch = e.changedTouches[0];
-            activeTile.style.display = 'none';
-            let target = document.elementFromPoint(touch.clientX, touch.clientY - 60);
-            activeTile.style.display = 'block';
+        function endDrag(e) {
+            if(!active) return;
+            active.classList.remove('dragging');
+            let t = e.changedTouches[0];
+            active.style.display = 'none';
+            let el = document.elementFromPoint(t.clientX, t.clientY - 60);
+            active.style.display = 'block';
 
-            let slot = target ? target.closest('.slot') : null;
-
-            if (slot && slot.dataset.index == activeTile.dataset.correctIndex) {
-                // CORRECT DROP
-                activeTile.style.position = 'static';
-                activeTile.style.width = '100%';
-                activeTile.style.height = '100%';
-                activeTile.style.margin = '0';
-                activeTile.classList.add('fixed');
-                slot.appendChild(activeTile);
-                checkWin();
+            let slot = el ? el.closest('.slot') : null;
+            if(slot && slot.dataset.idx == active.dataset.correct) {
+                active.style.position = 'static';
+                active.style.width = '100%'; active.style.height = '100%'; active.style.margin = '0';
+                active.classList.add('fixed');
+                slot.appendChild(active);
+                if(document.querySelectorAll('.fixed').length == grid*grid) {
+                    confetti();
+                    setTimeout(() => { level++; localStorage.setItem('pandaLevel', level); init(); }, 2000);
+                }
             } else {
-                // WRONG DROP
-                if (slot) loseLife(); 
-                activeTile.style.position = 'static';
-                activeTile.style.margin = '0';
-                activeTile.style.width = (boardWidth / 4) + 'px';
-                activeTile.style.height = (boardWidth / 4) + 'px';
-                document.getElementById('piece-tray').appendChild(activeTile);
+                if(slot) { lives--; save(); updateLives(); }
+                active.style.position = 'static'; active.style.width = '70px'; active.style.height = '70px'; active.style.margin = '0';
+                document.getElementById('piece-tray').appendChild(active);
             }
-            activeTile = null;
+            active = null;
         }
 
-        function checkWin() {
-            const gridSize = currentLevel < 4 ? 3 : (currentLevel < 8 ? 4 : 5);
-            const fixed = document.querySelectorAll('.tile.fixed').length;
-            if(fixed === gridSize * gridSize) {
-                confetti();
-                document.getElementById('nextLevelBtn').style.display = 'block';
-            }
+        function closeModal() { if(lives > 0) document.getElementById('start-modal').style.display = 'none'; }
+        function showEye(s) { 
+            let o = document.getElementById('overlay');
+            o.style.backgroundImage = `url('./${imgs[level % imgs.length]}')`;
+            o.style.display = s ? 'block' : 'none'; 
         }
 
-        function nextLevel() {
-            currentLevel++;
-            localStorage.setItem('pandaLevel', currentLevel);
-            initLevel();
-        }
-
-        setInterval(updateStamina, 1000);
-        window.onload = initLevel;
+        setInterval(updateLives, 1000);
+        window.onload = init;
     </script>
 </body>
 </html>
