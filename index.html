@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest: Swap Saga</title>
+    <title>Panda Quest: Evolution</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --accent: #00f2ea; --bg: #0b0e14; --panel: #161b22; }
@@ -12,10 +12,9 @@
             margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden;
         }
 
-        /* Top Stats */
+        /* Stats Bar */
         .header { width: 100%; background: #000; padding: 15px 0; border-bottom: 1px solid #333; text-align: center; }
         #heart-display { font-size: 1.5rem; letter-spacing: 5px; }
-        #heart-timer { font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
 
         .stats-bar { display: flex; justify-content: space-around; width: 100%; max-width: 400px; margin: 15px 0; }
         .stat-box { text-align: center; background: var(--panel); padding: 8px 15px; border-radius: 10px; border: 1px solid #333; min-width: 90px; }
@@ -27,84 +26,90 @@
             display: grid; gap: 4px; width: 90vw; max-width: 360px; 
             background: #1e293b; padding: 10px; border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            transition: all 0.5s ease;
         }
         .tile { 
             aspect-ratio: 1/1; background-repeat: no-repeat; border-radius: 4px;
-            transition: transform 0.2s, border 0.2s; cursor: pointer;
-            border: 2px solid transparent;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border 0.2s; 
+            cursor: pointer; border: 2px solid transparent;
         }
-        .tile.selected { 
-            border: 2px solid var(--accent); 
-            transform: scale(1.05); 
-            z-index: 10;
-            box-shadow: 0 0 15px var(--accent);
-        }
+        .tile.selected { border: 2px solid var(--accent); transform: scale(1.08); z-index: 10; box-shadow: 0 0 15px var(--accent); }
         
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-8px); }
-            75% { transform: translateX(8px); }
-        }
-
-        /* Modals */
+        /* Modal UI */
         #start-modal { position: fixed; inset: 0; background: #0b0e14; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        #preview-img { width: 200px; height: 200px; border: 3px solid var(--accent); border-radius: 12px; margin: 20px 0; background-size: cover; }
+        #preview-img { width: 180px; height: 180px; border: 3px solid var(--accent); border-radius: 12px; margin: 20px 0; background-size: cover; }
         .btn-play { padding: 18px 60px; background: var(--accent); color: #000; border-radius: 50px; border: none; font-weight: 800; font-size: 1.1rem; cursor: pointer; }
-        .btn-disabled { background: #334155 !important; color: #94a3b8 !important; pointer-events: none; }
+        
+        #msg-bubble { background: white; color: black; padding: 15px; border-radius: 15px; margin: 0 40px 20px; font-weight: bold; position: relative; }
+        #msg-bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; border-width: 10px 10px 0; border-style: solid; border-color: white transparent; margin-left: -10px; }
     </style>
 </head>
 <body>
 
     <div id="start-modal">
-        <h2 id="level-title">WORLD 1</h2>
+        <div id="msg-bubble">Help me fix the Panda forest!</div>
         <div id="preview-img"></div>
-        <p style="margin: 0 40px 20px; font-size: 0.9rem;">Tap two tiles to <b>Swap</b> their positions!</p>
-        <button class="btn-play" id="main-btn" onclick="closeModal()">START</button>
+        <button class="btn-play" onclick="closeModal()">START WORLD</button>
     </div>
 
     <div class="header">
         <div id="heart-display">❤️❤️❤️❤️❤️</div>
-        <div id="heart-timer">FULL ENERGY</div>
     </div>
 
     <div class="stats-bar">
         <div class="stat-box">
-            <span class="stat-label">MOVES LEFT</span>
+            <span class="stat-label">MOVES</span>
             <span id="moves-left" class="stat-value">--</span>
         </div>
         <div class="stat-box">
-            <span class="stat-label">GRID</span>
-            <span id="grid-info" class="stat-value">--</span>
+            <span class="stat-label">LEVEL</span>
+            <span id="level-info" class="stat-value">--</span>
         </div>
     </div>
 
     <div id="puzzle-board"></div>
 
     <script>
-        let level = parseInt(localStorage.getItem('pandaLevel')) || 0;
-        let lives = localStorage.getItem('pandaLives') === null ? 5 : parseInt(localStorage.getItem('pandaLives'));
-        let lastLoss = parseInt(localStorage.getItem('pandaLastLoss')) || Date.now();
-        const REFILL_MS = 30 * 60000;
-
-        // Difficulty Settings
-        const grid = level === 0 ? 2 : (level < 4 ? 3 : 4);
-        const moveLimit = level === 0 ? 10 : (level < 4 ? 20 : 40);
+        let level = parseInt(localStorage.getItem('pandaLevel')) || 1;
+        let isTutorialPhase = true; // Every level starts with a simple 2x2 "Warmup"
+        
+        let grid = 2; 
+        let moveLimit = 10;
         let currentMoves = moveLimit;
 
         const images = ['image.png', 'image1.png', 'image2.png', 'image3.png', 'image4.png', 'image5.png'];
-        const currentImg = `./${images[level % images.length]}`;
+        let currentImg = `./${images[(level-1) % images.length]}`;
+        
         let tiles = [];
         let firstSelection = null;
 
         function init() {
-            updateUI();
-            // Generate board state (shuffled)
-            tiles = Array.from({length: grid * grid}, (_, i) => i);
-            do {
-                tiles.sort(() => Math.random() - 0.5);
-            } while (isSolved()); // Ensure it's not solved at start
+            // Adjust grid: Phase 1 is always 2x2. Phase 2 (Real Game) increases with levels.
+            if (!isTutorialPhase) {
+                grid = level < 3 ? 3 : 4; // Level 1-2: 3x3, Level 3+: 4x4
+                moveLimit = grid === 3 ? 25 : 50;
+                currentMoves = moveLimit;
+            } else {
+                grid = 2;
+                currentMoves = 10;
+            }
 
+            document.getElementById('level-info').innerText = level;
+            document.getElementById('moves-left').innerText = currentMoves;
+            document.getElementById('preview-img').style.backgroundImage = `url('${currentImg}')`;
+
+            tiles = Array.from({length: grid * grid}, (_, i) => i);
+            shuffleTiles();
             renderBoard();
+        }
+
+        function shuffleTiles() {
+            // If it's the warmup, only swap 2 pieces. If real game, shuffle all.
+            if (isTutorialPhase) {
+                [tiles[0], tiles[1]] = [tiles[1], tiles[0]]; 
+            } else {
+                tiles.sort(() => Math.random() - 0.5);
+            }
         }
 
         function renderBoard() {
@@ -115,101 +120,62 @@
 
             tiles.forEach((val, i) => {
                 const div = document.createElement('div');
-                div.className = 'tile';
-                if (firstSelection === i) div.classList.add('selected');
-
+                div.className = 'tile' + (firstSelection === i ? ' selected' : '');
                 div.style.backgroundImage = `url('${currentImg}')`;
                 div.style.backgroundSize = `${boardPx}px ${boardPx}px`;
-                
-                // Calculate original position for background
                 let r = Math.floor(val / grid), c = val % grid;
                 div.style.backgroundPosition = `-${c * (boardPx/grid)}px -${r * (boardPx/grid)}px`;
-
-                div.onclick = () => handleTileClick(i);
+                div.onclick = () => handleSwap(i);
                 board.appendChild(div);
             });
         }
 
-        function handleTileClick(idx) {
-            if (currentMoves <= 0 || lives <= 0) return;
-
+        function handleSwap(idx) {
             if (firstSelection === null) {
                 firstSelection = idx;
                 renderBoard();
-            } else if (firstSelection === idx) {
-                firstSelection = null;
-                renderBoard();
             } else {
-                // Perform Swap
-                [tiles[firstSelection], tiles[idx]] = [tiles[idx], tiles[firstSelection]];
-                currentMoves--;
-                firstSelection = null;
-                
-                if(window.navigator.vibrate) window.navigator.vibrate(20);
-                
-                renderBoard();
-                checkGameState();
-            }
-        }
-
-        function isSolved() {
-            return tiles.every((v, i) => v === i);
-        }
-
-        function checkGameState() {
-            if (isSolved()) {
-                confetti();
-                setTimeout(() => {
-                    level++;
-                    localStorage.setItem('pandaLevel', level);
-                    location.reload();
-                }, 2000);
-            } else if (currentMoves <= 0) {
-                lives--;
-                lastLoss = Date.now();
-                localStorage.setItem('pandaLives', lives);
-                localStorage.setItem('pandaLastLoss', lastLoss);
-                document.getElementById('puzzle-board').style.animation = "shake 0.5s";
-                setTimeout(() => { alert("Out of moves! Heart lost."); location.reload(); }, 500);
-            } else {
-                document.getElementById('moves-left').innerText = currentMoves;
-            }
-        }
-
-        function updateUI() {
-            const now = Date.now();
-            if (lives < 5) {
-                let regen = Math.floor((now - lastLoss) / REFILL_MS);
-                if (regen > 0) {
-                    lives = Math.min(5, lives + regen);
-                    lastLoss = now;
-                    localStorage.setItem('pandaLives', lives);
+                if (firstSelection !== idx) {
+                    [tiles[firstSelection], tiles[idx]] = [tiles[idx], tiles[firstSelection]];
+                    currentMoves--;
+                    document.getElementById('moves-left').innerText = currentMoves;
+                    if(window.navigator.vibrate) window.navigator.vibrate(20);
                 }
-            }
-
-            document.getElementById('heart-display').innerText = '❤️'.repeat(lives) + '🖤'.repeat(5 - lives);
-            document.getElementById('moves-left').innerText = currentMoves;
-            document.getElementById('grid-info').innerText = `${grid}x${grid}`;
-            document.getElementById('level-title').innerText = level === 0 ? "TUTORIAL" : `WORLD ${level}`;
-            document.getElementById('preview-img').style.backgroundImage = `url('${currentImg}')`;
-
-            const btn = document.getElementById('main-btn');
-            if (lives <= 0) {
-                const rem = REFILL_MS - (now - lastLoss);
-                const timeStr = `${Math.floor(rem/60000)}:${Math.floor((rem%60000)/1000).toString().padStart(2,'0')}`;
-                btn.innerText = `WAIT ${timeStr}`;
-                btn.classList.add('btn-disabled');
-                document.getElementById('heart-timer').innerText = `CHARGING: ${timeStr}`;
-            } else {
-                btn.innerText = "START LEVEL";
-                btn.classList.remove('btn-disabled');
-                document.getElementById('heart-timer').innerText = lives < 5 ? "RECHARGING..." : "FULL ENERGY";
+                firstSelection = null;
+                renderBoard();
+                checkProgress();
             }
         }
 
-        function closeModal() { if (lives > 0) document.getElementById('start-modal').style.display = 'none'; }
+        function checkProgress() {
+            if (tiles.every((v, i) => v === i)) {
+                if (isTutorialPhase) {
+                    // --- THE AUTO-RESHUFFLE LOGIC ---
+                    isTutorialPhase = false;
+                    confetti({ particleCount: 50, spread: 60 });
+                    setTimeout(() => {
+                        // Reshuffle the same level but harder
+                        document.getElementById('msg-bubble').innerText = "Warmup complete! Now for the real challenge...";
+                        init(); 
+                    }, 1000);
+                } else {
+                    // LEVEL COMPLETE
+                    confetti({ particleCount: 150, spread: 100 });
+                    setTimeout(() => {
+                        level++;
+                        localStorage.setItem('pandaLevel', level);
+                        isTutorialPhase = true; // Reset for next level
+                        location.reload();
+                    }, 2000);
+                }
+            } else if (currentMoves <= 0) {
+                alert("Out of moves! Try again.");
+                location.reload();
+            }
+        }
+
+        function closeModal() { document.getElementById('start-modal').style.display = 'none'; }
         window.onload = init;
-        setInterval(updateUI, 1000);
     </script>
 </body>
 </html>
