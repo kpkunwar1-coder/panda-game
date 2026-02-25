@@ -3,31 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest: Saga Edition</title>
+    <title>Panda Quest: Swipe Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --accent: #00f2ea; --bg: #0b0e14; --panel: #161b22; }
         body { 
-            font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: white; 
+            font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; 
             margin: 0; padding: 0; min-height: 100vh; overflow: hidden;
             display: flex; flex-direction: column; align-items: center; touch-action: none;
         }
 
-        /* --- Header Stats --- */
+        /* Stats Header */
         .header { width: 100%; background: #000; padding: 10px 0; border-bottom: 1px solid #333; z-index: 100; text-align: center; }
         #heart-display { font-size: 1.4rem; letter-spacing: 4px; }
-        #heart-timer { font-size: 0.7rem; color: #94a3b8; margin-top: 4px; font-weight: bold; }
+        #heart-timer { font-size: 0.7rem; color: #94a3b8; margin-top: 4px; }
 
-        /* --- Controls --- */
         .controls { display: flex; gap: 30px; margin: 15px 0; }
         .icon-btn { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; font-size: 0.65rem; gap: 5px; cursor: pointer; }
         .icon-btn svg { width: 24px; height: 24px; fill: currentColor; }
 
-        /* --- Board & Animation --- */
+        /* Puzzle Board */
         #puzzle-board { 
             display: grid; gap: 2px; width: 90vw; max-width: 350px; 
             background: #1e293b; padding: 6px; border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
         .slot { aspect-ratio: 1/1; background: #0f172a; border-radius: 4px; }
         
@@ -37,28 +35,40 @@
             75% { transform: translateX(6px); }
         }
 
-        /* --- Tray & Tiles --- */
-        .tray-container { width: 100vw; background: var(--panel); position: fixed; bottom: 0; padding: 20px 0; border-top: 1px solid #333; }
-        #piece-tray { 
-            display: flex; gap: 15px; overflow-x: auto; padding: 0 30px; 
-            scrollbar-width: none; min-height: 90px; align-items: center;
-            -webkit-overflow-scrolling: touch;
+        /* --- THE SWIPE TRAY (UPDATED) --- */
+        .tray-container { 
+            width: 100vw; background: var(--panel); position: fixed; 
+            bottom: 0; padding: 10px 0 25px 0; border-top: 2px solid #333; 
+            z-index: 1000;
         }
-        #piece-tray::-webkit-scrollbar { display: none; }
+        .tray-label { text-align: center; font-size: 0.6rem; color: #555; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        #piece-tray { 
+            display: flex; gap: 15px; overflow-x: auto; /* Enable horizontal swipe */
+            padding: 10px 30px; align-items: center; min-height: 100px;
+            scrollbar-width: none; /* Hide scrollbar Firefox */
+            -webkit-overflow-scrolling: touch; /* Smooth swipe iOS */
+        }
+        #piece-tray::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome/Safari */
 
-        .tile { flex: 0 0 auto; background-repeat: no-repeat; border: 1px solid #333; border-radius: 4px; touch-action: none; }
+        .tile { 
+            flex: 0 0 80px; /* IMPORTANT: Prevents pieces from shrinking */
+            height: 80px; background-repeat: no-repeat; 
+            border: 2px solid #333; border-radius: 8px; 
+            touch-action: none; background-color: #0d1117;
+        }
         .tile.dragging {
             position: fixed !important; z-index: 10000; pointer-events: none;
             transform: scale(1.1); border: 2px solid var(--accent) !important;
-            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.8));
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.9));
         }
-        .tile.fixed { pointer-events: none; border: none; z-index: 1; }
+        .tile.fixed { pointer-events: none; border: none; flex: none; width: 100%; height: 100%; }
 
-        /* --- Tutorial Modal & Timer Button --- */
+        /* Modals */
         #start-modal { position: fixed; inset: 0; background: #0b0e14; z-index: 20000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .tutorial-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; width: 85%; max-width: 320px; font-size: 0.85rem; text-align: left; margin-bottom: 20px; border: 1px solid #333; line-height: 1.4; }
+        .tutorial-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; width: 80%; max-width: 300px; font-size: 0.85rem; text-align: left; margin-bottom: 20px; border: 1px solid #333; }
         #preview-img { width: 220px; height: 220px; border: 3px solid var(--accent); border-radius: 15px; margin-bottom: 20px; background-size: cover; background-color: #1e293b; }
-        .btn-play { padding: 18px 60px; background: var(--accent); color: #000; border-radius: 50px; border: none; font-weight: 800; font-size: 1.1rem; min-width: 220px; cursor: pointer; transition: 0.3s; }
+        .btn-play { padding: 18px 60px; background: var(--accent); color: #000; border-radius: 50px; border: none; font-weight: 800; font-size: 1.1rem; cursor: pointer; }
 
         #eye-overlay { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; height: 340px; border: 3px solid var(--accent); z-index: 5000; background-size: cover; pointer-events: none; }
     </style>
@@ -66,11 +76,11 @@
 <body>
 
     <div id="start-modal">
-        <h2 style="color: var(--accent); margin-bottom: 10px;">PANDA QUEST</h2>
+        <h2 style="color: var(--accent); margin-bottom: 15px;">HOW TO PLAY</h2>
         <div class="tutorial-box">
-            <div>🎯 <b>Goal:</b> Match pieces to their correct slots.</div>
-            <div>❤️ <b>Penalty:</b> Wrong drops cost 1 heart.</div>
-            <div>🔄 <b>Reset:</b> Restarting costs 1 heart.</div>
+            <div>🎯 <b>Swipe</b> pieces at the bottom.</div>
+            <div>🎯 <b>Drag</b> them to the correct slot.</div>
+            <div>❤️ <b>Penalty:</b> Wrong drops cost 1 Heart.</div>
         </div>
         <div id="preview-img"></div>
         <button class="btn-play" onclick="closeModal()">START LEVEL</button>
@@ -93,24 +103,21 @@
     </div>
 
     <div id="puzzle-board"></div>
-    <div class="tray-container"><div id="piece-tray"></div></div>
+
+    <div class="tray-container">
+        <div class="tray-label">Swipe Pieces ⟷</div>
+        <div id="piece-tray"></div>
+    </div>
+
     <div id="eye-overlay"></div>
 
     <script>
-        // --- DATA & STAMINA ---
         let level = parseInt(localStorage.getItem('pandaLevel')) || 0;
         let lives = localStorage.getItem('pandaLives');
-        
-        // Auto-fix broken life count
-        if (lives === null || isNaN(parseInt(lives))) {
-            lives = 5;
-            localStorage.setItem('pandaLives', 5);
-        } else {
-            lives = parseInt(lives);
-        }
+        if (lives === null || isNaN(parseInt(lives))) { lives = 5; localStorage.setItem('pandaLives', 5); } else { lives = parseInt(lives); }
 
         let lastLoss = parseInt(localStorage.getItem('pandaLastLoss')) || Date.now();
-        const REFILL_MS = 30 * 60000; // 30 mins
+        const REFILL_MS = 30 * 60000;
         const images = ['image.png', 'image1.png', 'image2.png', 'image3.png', 'image4.png', 'image5.png'];
         const currentImg = `./${images[level % images.length]}`;
         const grid = level < 3 ? 3 : 4;
@@ -137,7 +144,6 @@
                 let t = document.createElement('div');
                 t.className = 'tile';
                 t.dataset.correct = p;
-                t.style.width = '75px'; t.style.height = '75px';
                 t.style.backgroundImage = `url('${currentImg}')`;
                 t.style.backgroundSize = `${boardPx}px ${boardPx}px`;
                 let r = Math.floor(p/grid), c = p%grid;
@@ -151,60 +157,33 @@
 
         function refreshStamina() {
             const now = Date.now();
-            const passed = now - lastLoss;
-
             if (lives < 5) {
-                let regen = Math.floor(passed / REFILL_MS);
-                if (regen > 0) {
-                    lives = Math.min(5, lives + regen);
-                    lastLoss = now;
-                }
+                let regen = Math.floor((now - lastLoss) / REFILL_MS);
+                if (regen > 0) { lives = Math.min(5, lives + regen); lastLoss = now; }
             }
-
-            // Update UI & Timer Button
             document.getElementById('heart-display').innerText = '❤️'.repeat(lives) + '🖤'.repeat(5 - lives);
             
             const startBtn = document.querySelector('.btn-play');
-            const heartTimer = document.getElementById('heart-timer');
             const remaining = REFILL_MS - (now - lastLoss);
-            const mins = Math.floor(remaining / 60000);
-            const secs = Math.floor((remaining % 60000) / 1000);
-            const timeStr = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            const timeStr = `${Math.floor(remaining/60000)}:${Math.floor((remaining%60000)/1000).toString().padStart(2,'0')}`;
 
             if (lives <= 0) {
                 startBtn.innerText = `WAIT ${timeStr}`;
-                startBtn.style.background = "#334155";
-                startBtn.style.color = "#94a3b8";
-                heartTimer.innerText = `NEXT LIFE IN: ${timeStr}`;
+                startBtn.style.background = "#333";
+                document.getElementById('heart-timer').innerText = `NEXT LIFE IN: ${timeStr}`;
             } else {
                 startBtn.innerText = "START LEVEL";
                 startBtn.style.background = "var(--accent)";
-                startBtn.style.color = "#000";
-                heartTimer.innerText = lives < 5 ? `NEXT LIFE IN: ${timeStr}` : "FULL STAMINA";
+                document.getElementById('heart-timer').innerText = lives < 5 ? `NEXT LIFE IN: ${timeStr}` : "FULL STAMINA";
             }
-
             localStorage.setItem('pandaLives', lives);
             localStorage.setItem('pandaLastLoss', lastLoss);
         }
 
-        function closeModal() {
-            if (lives > 0) {
-                document.getElementById('start-modal').style.display = 'none';
-            } else {
-                if(window.navigator.vibrate) window.navigator.vibrate(50);
-                document.querySelector('.btn-play').style.animation = "shake 0.3s";
-                setTimeout(() => document.querySelector('.btn-play').style.animation = "", 300);
-            }
-        }
-
         function triggerReset() {
             if (confirm("Resetting costs 1 Heart. Continue?")) {
-                if (lives > 1) {
-                    lives--;
-                    lastLoss = Date.now();
-                    localStorage.setItem('pandaLives', lives);
-                    location.reload();
-                } else { alert("Not enough hearts!"); }
+                if (lives > 1) { lives--; localStorage.setItem('pandaLives', lives); location.reload(); }
+                else { alert("Not enough hearts!"); }
             }
         }
 
@@ -232,35 +211,26 @@
             let slot = el ? el.closest('.slot') : null;
 
             if(slot && slot.dataset.idx == active.dataset.correct) {
-                active.style.position = 'static';
-                active.style.width = '100%'; active.style.height = '100%'; active.style.margin = '0';
-                active.classList.add('fixed');
+                active.className = 'tile fixed';
+                active.style.position = 'static'; active.style.margin = '0';
                 slot.appendChild(active);
-                if(window.navigator.vibrate) window.navigator.vibrate(20);
                 if(document.querySelectorAll('.fixed').length == grid*grid) {
                     confetti();
                     setTimeout(() => { level++; localStorage.setItem('pandaLevel', level); location.reload(); }, 2000);
                 }
             } else {
-                if(slot) { 
-                    lives--; 
-                    lastLoss = Date.now();
-                    refreshStamina();
-                    if(window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+                if(slot) { lives--; lastLoss = Date.now(); refreshStamina();
                     document.getElementById('puzzle-board').style.animation = "shake 0.4s";
                     setTimeout(() => document.getElementById('puzzle-board').style.animation = "", 400);
                 }
-                active.style.position = 'static'; active.style.width = '75px'; active.style.height = '75px';
+                active.style.position = 'static'; active.style.margin = '0';
                 document.getElementById('piece-tray').appendChild(active);
             }
             active = null;
         }
 
-        function toggleEye(s) {
-            const e = document.getElementById('eye-overlay');
-            e.style.backgroundImage = `url('${currentImg}')`;
-            e.style.display = s ? 'block' : 'none';
-        }
+        function closeModal() { if(lives > 0) document.getElementById('start-modal').style.display = 'none'; }
+        function toggleEye(s) { document.getElementById('eye-overlay').style.backgroundImage = `url('${currentImg}')`; document.getElementById('eye-overlay').style.display = s ? 'block' : 'none'; }
 
         window.onload = init;
         setInterval(refreshStamina, 1000);
