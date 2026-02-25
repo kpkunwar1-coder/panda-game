@@ -1,61 +1,244 @@
-// --- LIVES SYSTEM LOGIC ---
-const MAX_LIVES = 5;
-const REFILL_TIME = 30 * 60 * 1000; // 30 Minutes in milliseconds
-
-let gameState = {
-    lives: parseInt(localStorage.getItem('pandaLives')) ?? MAX_LIVES,
-    lastLoss: parseInt(localStorage.getItem('pandaLastLoss')) || Date.now()
-};
-
-function updateLives() {
-    const now = Date.now();
-    const timePassed = now - gameState.lastLoss;
-    
-    // Calculate how many hearts regenerated
-    if (gameState.lives < MAX_LIVES) {
-        const regenerated = Math.floor(timePassed / REFILL_TIME);
-        if (regenerated > 0) {
-            gameState.lives = Math.min(MAX_LIVES, gameState.lives + regenerated);
-            gameState.lastLoss = now; // Reset timer for the next heart
-            saveState();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Panda Quest: Saga Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { --accent: #00f2ea; --bg: #0b0e14; --panel: #161b22; }
+        body { 
+            font-family: 'Inter', sans-serif; background: var(--bg); color: white; 
+            margin: 0; padding: 10px; min-height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; touch-action: none;
         }
-    }
-    renderHearts();
-}
 
-function renderHearts() {
-    const heartContainer = document.getElementById('heart-display');
-    heartContainer.innerHTML = '❤️'.repeat(gameState.lives) + '🖤'.repeat(MAX_LIVES - gameState.lives);
-    
-    // Show timer if lives are missing
-    const timer = document.getElementById('heart-timer');
-    if (gameState.lives < MAX_LIVES) {
-        const remaining = REFILL_TIME - (Date.now() - gameState.lastLoss);
-        const mins = Math.floor(remaining / 60000);
-        const secs = Math.floor((remaining % 60000) / 1000);
-        timer.innerText = `Next in: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
-    } else {
-        timer.innerText = "Full";
-    }
-}
+        /* Hearts & Stamina */
+        .stats-bar { display: flex; flex-direction: column; align-items: center; margin: 10px 0; }
+        #heart-display { font-size: 1.5rem; letter-spacing: 5px; filter: drop-shadow(0 0 5px rgba(255,0,0,0.5)); }
+        #heart-timer { font-size: 0.7rem; color: #94a3b8; margin-top: 5px; font-weight: bold; }
 
-function loseLife() {
-    if (gameState.lives > 0) {
-        if (gameState.lives === MAX_LIVES) gameState.lastLoss = Date.now();
-        gameState.lives--;
-        saveState();
-        renderHearts();
-        if(window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]); // "Oops" vibration
-    }
-    if (gameState.lives === 0) {
-        alert("Out of lives! Wait for regeneration.");
-    }
-}
+        /* The Board */
+        #puzzle-board { 
+            display: grid; gap: 2px; width: 90vw; max-width: 350px; 
+            background: #1e293b; padding: 6px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .slot { aspect-ratio: 1/1; background: #0f172a; border-radius: 4px; position: relative; }
 
-function saveState() {
-    localStorage.setItem('pandaLives', gameState.lives);
-    localStorage.setItem('pandaLastLoss', gameState.lastLoss);
-}
+        /* Tiles */
+        .tile { flex: 0 0 auto; background-repeat: no-repeat; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+        .tile.dragging {
+            position: fixed !important; z-index: 10000; pointer-events: none;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.7));
+            border: 2px solid var(--accent) !important;
+        }
+        .tile.fixed { pointer-events: none; border: none; z-index: 1; }
 
-// Update hearts every second for the timer
-setInterval(updateLives, 1000);
+        /* Tray & UI */
+        .tray-container { width: 100vw; background: var(--panel); padding: 20px 0; position: fixed; bottom: 0; border-top: 1px solid #30363d; }
+        #piece-tray { display: flex; gap: 15px; overflow-x: scroll; padding: 0 30px; scrollbar-width: none; min-height: 90px; }
+
+        /* Story/Start Modal */
+        #start-modal {
+            position: fixed; inset: 0; background: rgba(11, 14, 20, 0.98);
+            z-index: 9000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
+        }
+        #goal-preview { width: 280px; height: 280px; border-radius: 20px; border: 4px solid var(--accent); background-size: cover; margin-bottom: 25px; box-shadow: 0 0 30px rgba(0,242,234,0.3); }
+        .btn-main { padding: 18px 60px; background: var(--accent); color: black; border-radius: 50px; font-weight: 800; border: none; font-size: 1.2rem; cursor: pointer; transition: transform 0.2s; }
+        .btn-main:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <div id="start-modal">
+        <h1 id="modal-title" style="margin-bottom: 10px;">LEVEL READY</h1>
+        <p id="modal-desc" style="color: #94a3b8; margin-bottom: 20px;">Study the image carefully!</p>
+        <div id="goal-preview"></div>
+        <button class="btn-main" id="start-action-btn" onclick="startGame()">START</button>
+    </div>
+
+    <div class="stats-bar">
+        <div id="heart-display">❤️❤️❤️❤️❤️</div>
+        <div id="heart-timer">FULL</div>
+    </div>
+
+    <div id="puzzle-board"></div>
+
+    <div class="tray-container">
+        <div id="piece-tray"></div>
+    </div>
+
+    <button id="nextLevelBtn" class="btn-main" style="display:none; position:fixed; top:45%; z-index:10001;" onclick="nextLevel()">NEXT LEVEL →</button>
+
+    <script>
+        // --- STAMINA SYSTEM ---
+        const MAX_LIVES = 5;
+        const REFILL_TIME = 30 * 60 * 1000; 
+        let lives = parseInt(localStorage.getItem('pandaLives')) ?? MAX_LIVES;
+        let lastLoss = parseInt(localStorage.getItem('pandaLastLoss')) || Date.now();
+
+        function updateStamina() {
+            if (lives < MAX_LIVES) {
+                const now = Date.now();
+                const diff = now - lastLoss;
+                const regenerated = Math.floor(diff / REFILL_TIME);
+                if (regenerated > 0) {
+                    lives = Math.min(MAX_LIVES, lives + regenerated);
+                    lastLoss = now;
+                    saveStamina();
+                }
+            }
+            renderStamina();
+        }
+
+        function renderStamina() {
+            document.getElementById('heart-display').innerText = '❤️'.repeat(lives) + '🖤'.repeat(MAX_LIVES - lives);
+            const timerEl = document.getElementById('heart-timer');
+            if (lives < MAX_LIVES) {
+                const rem = REFILL_TIME - (Date.now() - lastLoss);
+                const m = Math.floor(rem / 60000);
+                const s = Math.floor((rem % 60000) / 1000);
+                timerEl.innerText = `REGEN IN: ${m}:${s < 10 ? '0' : ''}${s}`;
+            } else { timerEl.innerText = "FULL STAMINA"; }
+        }
+
+        function saveStamina() {
+            localStorage.setItem('pandaLives', lives);
+            localStorage.setItem('pandaLastLoss', lastLoss);
+        }
+
+        function loseLife() {
+            if (lives > 0) {
+                if (lives === MAX_LIVES) lastLoss = Date.now();
+                lives--;
+                saveStamina();
+                if(window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+            }
+        }
+
+        // --- GAME LOGIC ---
+        let currentLevel = parseInt(localStorage.getItem('pandaLevel')) || 0;
+        const levels = Array.from({length: 12}, (_, i) => i === 0 ? 'image.png' : `image${i + 1}.png`);
+        let boardWidth = Math.min(window.innerWidth * 0.9, 350);
+
+        function initLevel() {
+            if (lives <= 0) {
+                document.getElementById('start-action-btn').style.opacity = "0.5";
+                document.getElementById('start-action-btn').innerText = "WAIT FOR LIVES";
+            }
+            
+            document.getElementById('goal-preview').style.backgroundImage = `url('./${levels[currentLevel]}')`;
+            document.getElementById('start-modal').style.display = 'flex';
+            
+            const gridSize = currentLevel < 4 ? 3 : (currentLevel < 8 ? 4 : 5);
+            const board = document.getElementById('puzzle-board');
+            const tray = document.getElementById('piece-tray');
+            const tileSize = boardWidth / gridSize;
+
+            board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            board.innerHTML = ''; tray.innerHTML = '';
+            document.getElementById('nextLevelBtn').style.display = 'none';
+
+            for(let i=0; i < gridSize * gridSize; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                slot.dataset.index = i;
+                board.appendChild(slot);
+            }
+
+            let pieces = Array.from({length: gridSize * gridSize}, (_, i) => i);
+            pieces.sort(() => Math.random() - 0.5);
+
+            pieces.forEach(p => {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.dataset.correctIndex = p;
+                tile.style.width = (boardWidth / 4) + 'px';
+                tile.style.height = (boardWidth / 4) + 'px';
+                tile.style.backgroundImage = `url('./${levels[currentLevel]}')`;
+                tile.style.backgroundSize = `${boardWidth}px ${boardWidth}px`;
+                let row = Math.floor(p / gridSize), col = p % gridSize;
+                tile.style.backgroundPosition = `-${col * tileSize}px -${row * tileSize}px`;
+
+                tile.addEventListener('touchstart', touchStart);
+                tile.addEventListener('touchmove', touchMove);
+                tile.addEventListener('touchend', touchEnd);
+                tray.appendChild(tile);
+            });
+        }
+
+        function startGame() {
+            if (lives > 0) document.getElementById('start-modal').style.display = 'none';
+        }
+
+        let activeTile = null;
+        function touchStart(e) { if(!e.target.classList.contains('fixed')) activeTile = e.target; }
+
+        function touchMove(e) {
+            if (!activeTile) return;
+            e.preventDefault();
+            let touch = e.touches[0];
+            let gridSize = currentLevel < 4 ? 3 : (currentLevel < 8 ? 4 : 5);
+            let tSize = boardWidth / gridSize;
+
+            activeTile.classList.add('dragging');
+            activeTile.style.width = tSize + 'px';
+            activeTile.style.height = tSize + 'px';
+            activeTile.style.left = touch.clientX + 'px';
+            activeTile.style.top = (touch.clientY - 60) + 'px'; // Finger Offset
+            activeTile.style.marginLeft = -(tSize / 2) + 'px';
+            activeTile.style.marginTop = -(tSize / 2) + 'px';
+        }
+
+        function touchEnd(e) {
+            if (!activeTile) return;
+            activeTile.classList.remove('dragging');
+            let touch = e.changedTouches[0];
+            activeTile.style.display = 'none';
+            let target = document.elementFromPoint(touch.clientX, touch.clientY - 60);
+            activeTile.style.display = 'block';
+
+            let slot = target ? target.closest('.slot') : null;
+
+            if (slot && slot.dataset.index == activeTile.dataset.correctIndex) {
+                // CORRECT DROP
+                activeTile.style.position = 'static';
+                activeTile.style.width = '100%';
+                activeTile.style.height = '100%';
+                activeTile.style.margin = '0';
+                activeTile.classList.add('fixed');
+                slot.appendChild(activeTile);
+                checkWin();
+            } else {
+                // WRONG DROP
+                if (slot) loseLife(); 
+                activeTile.style.position = 'static';
+                activeTile.style.margin = '0';
+                activeTile.style.width = (boardWidth / 4) + 'px';
+                activeTile.style.height = (boardWidth / 4) + 'px';
+                document.getElementById('piece-tray').appendChild(activeTile);
+            }
+            activeTile = null;
+        }
+
+        function checkWin() {
+            const gridSize = currentLevel < 4 ? 3 : (currentLevel < 8 ? 4 : 5);
+            const fixed = document.querySelectorAll('.tile.fixed').length;
+            if(fixed === gridSize * gridSize) {
+                confetti();
+                document.getElementById('nextLevelBtn').style.display = 'block';
+            }
+        }
+
+        function nextLevel() {
+            currentLevel++;
+            localStorage.setItem('pandaLevel', currentLevel);
+            initLevel();
+        }
+
+        setInterval(updateStamina, 1000);
+        window.onload = initLevel;
+    </script>
+</body>
+</html>
