@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest: Pro Edition</title>
+    <title>Panda Quest: Jigsaw Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { 
@@ -14,222 +14,140 @@
         body { 
             font-family: 'Inter', sans-serif; text-align: center; 
             background: radial-gradient(circle at top, #1e293b 0%, #0b0e14 100%);
-            color: white; margin: 0; padding: 15px; min-height: 100vh; overflow-x: hidden;
+            color: white; margin: 0; padding: 10px; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        /* Progress Bar Styles */
-        .progress-container {
-            width: 90%; max-width: 400px; height: 8px; background: rgba(255,255,255,0.1);
-            border-radius: 10px; margin: 10px auto 20px auto; overflow: hidden;
-        }
-        #progress-fill {
-            width: 0%; height: 100%; background: linear-gradient(to right, var(--accent), var(--secondary));
-            transition: width 0.5s ease; box-shadow: 0 0 10px var(--accent);
-        }
+        .progress-container { width: 90%; max-width: 400px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 10px 0; overflow: hidden; }
+        #progress-fill { width: 0%; height: 100%; background: linear-gradient(to right, var(--accent), var(--secondary)); transition: 0.5s; }
 
-        h1 { 
-            font-size: 1.8rem; letter-spacing: 2px; text-transform: uppercase;
-            background: linear-gradient(to right, var(--accent), var(--secondary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin: 5px 0;
-        }
+        h1 { font-size: 1.5rem; letter-spacing: 2px; text-transform: uppercase; margin: 5px 0; background: linear-gradient(to right, var(--accent), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        #status-msg { font-weight: 600; color: var(--accent); margin-bottom: 10px; height: 20px; font-size: 0.8rem; }
-
-        .stats {
-            display: flex; justify-content: space-around; background: var(--card-bg);
-            backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px; border-radius: 15px; margin: 0 auto 15px auto; width: 90%; max-width: 400px;
-        }
+        .stats { display: flex; justify-content: space-around; background: var(--card-bg); width: 90%; max-width: 400px; padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); }
         .stats div { font-size: 0.7rem; color: #94a3b8; }
-        .stats b { display: block; font-size: 1.1rem; color: white; margin-top: 4px; }
+        .stats b { display: block; font-size: 1rem; color: white; }
 
-        .game-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
-        .control-btn { 
-            background: var(--card-bg); border: 1px solid var(--accent); color: white;
-            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+        /* The Sleek Empty Board */
+        #puzzle-board { 
+            display: grid; gap: 2px; width: 92vw; max-width: 380px; 
+            background: rgba(0,0,0,0.3); padding: 4px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;
         }
 
-        #puzzle-board { 
-            display: grid; gap: 5px; width: 90vw; max-width: 400px; margin: 0 auto;
-            background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .slot { aspect-ratio: 1/1; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.1); border-radius: 4px; position: relative; }
+
+        /* The Piece Tray */
+        #piece-tray { 
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; 
+            width: 92vw; max-width: 400px; padding: 15px; 
+            background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 80px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .tile { 
-            aspect-ratio: 1 / 1; background-size: 90vw 90vw; border-radius: 6px; 
-            cursor: pointer; position: relative; transition: 0.2s;
+            aspect-ratio: 1/1; border-radius: 4px; cursor: grab;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); touch-action: none;
+            background-repeat: no-repeat;
         }
-        @media (min-width: 400px) { .tile { background-size: 400px 400px; } }
+        .tile:active { cursor: grabbing; transform: scale(1.1); z-index: 100; }
+        
+        /* Hint Styles */
+        .hint-correct { border: 2px solid #4ade80 !important; }
+        .hint-wrong { border: 2px solid #f87171 !important; }
 
-        .selected { outline: 3px solid white; box-shadow: 0 0 15px var(--accent); z-index: 5; }
-
-        /* Modern Glow Hints */
-        .hint-correct { box-shadow: inset 0 0 25px #4ade80 !important; border: 2px solid #4ade80 !important; }
-        .hint-wrong { box-shadow: inset 0 0 25px #f87171 !important; border: 2px solid #f87171 !important; }
-
-        /* Preview Overlay & X Button */
-        #preview-overlay {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 85vw; height: 85vw; max-width: 380px; max-height: 380px;
-            background-size: cover; border: 4px solid var(--accent); border-radius: 15px; z-index: 1000;
-        }
-        .close-x {
-            position: absolute; top: -15px; right: -15px; background: var(--secondary);
-            color: white; border: none; border-radius: 50%; width: 35px; height: 35px;
-            font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        .next-btn { 
-            margin-top: 20px; padding: 15px 35px; background: linear-gradient(45deg, var(--accent), var(--secondary));
-            color: white; border: none; border-radius: 50px; font-weight: bold; display: none; cursor: pointer;
-        }
+        .next-btn { margin-top: 20px; padding: 12px 30px; background: linear-gradient(45deg, var(--accent), var(--secondary)); color: white; border: none; border-radius: 50px; font-weight: bold; display: none; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="progress-container"><div id="progress-fill"></div></div>
     <h1>🐼 Panda Quest</h1>
-    <div id="status-msg">Loading...</div>
+    <div id="status-msg" style="font-size: 0.8rem; color: var(--accent); margin-bottom: 10px;">Drag pieces to the board!</div>
 
     <div class="stats">
-        <div>Moves<b id="moves">0</b></div>
         <div>Level<b id="level-display">1/12</b></div>
+        <div>Grid<b id="grid-display">3x3</b></div>
         <div>Hints<b id="hint-count">3</b></div>
     </div>
 
-    <div class="game-controls">
-        <button class="control-btn" onclick="togglePreview(true)">👁️ VIEW</button>
-        <button class="control-btn" onclick="useHint()">💡 HINT</button>
-    </div>
-    
     <div id="puzzle-board"></div>
-
-    <div id="preview-overlay">
-        <button class="close-x" onclick="togglePreview(false)">X</button>
-    </div>
+    <div id="piece-tray"></div>
 
     <button id="nextLevelBtn" class="next-btn" onclick="nextLevel()">NEXT LEVEL →</button>
 
     <script>
-        let moves = 0, selectedTileIndex = null, pieces = [], isShuffling = false, gridSize = 3;
         let currentLevel = parseInt(localStorage.getItem('pandaLevel')) || 0;
         let hintsLeft = parseInt(localStorage.getItem('pandaHints')) || 3;
-
-        const levels = [
-            'image.png', 'image2.png', 'image3.png', 'image4.png',
-            'image5.png', 'image6.png', 'image7.png', 'image8.png',
-            'image9.png', 'image10.png', 'image11.png', 'image12.png'
-        ];
+        let gridSize = 3;
+        const levels = Array.from({length: 12}, (_, i) => `image${i === 0 ? '' : i + 1}.png`); // Handles image.png then image2.png...
+        
+        // Correcting your specific first image name
+        levels[0] = 'image.png'; 
 
         function initLevel() {
             if (currentLevel < 4) gridSize = 3;
             else if (currentLevel < 8) gridSize = 4;
             else gridSize = 5;
 
-            // Update UI
             document.getElementById('level-display').innerText = `${currentLevel + 1}/12`;
-            document.getElementById('hint-count').innerText = hintsLeft;
-            document.getElementById('progress-fill').style.width = `${((currentLevel) / 12) * 100}%`;
+            document.getElementById('grid-display').innerText = `${gridSize}x${gridSize}`;
+            document.getElementById('progress-fill').style.width = `${(currentLevel / 12) * 100}%`;
+            document.getElementById('nextLevelBtn').style.display = 'none';
 
-            pieces = Array.from({length: gridSize * gridSize}, (_, i) => i);
             const board = document.getElementById('puzzle-board');
+            const tray = document.getElementById('piece-tray');
             board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-            
-            autoStart();
-        }
-
-        function drawBoard() {
-            const board = document.getElementById('puzzle-board');
             board.innerHTML = '';
-            pieces.forEach((p, i) => {
-                const div = document.createElement('div');
-                div.className = 'tile';
-                div.style.backgroundImage = `url('./${levels[currentLevel]}')`;
+            tray.innerHTML = '';
+
+            // Create Slots
+            for(let i=0; i < gridSize * gridSize; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                slot.dataset.index = i;
+                // Basic Drag/Drop API
+                slot.addEventListener('dragover', e => e.preventDefault());
+                slot.addEventListener('drop', handleDrop);
+                board.appendChild(slot);
+            }
+
+            // Create Shuffled Pieces
+            let pieces = Array.from({length: gridSize * gridSize}, (_, i) => i);
+            pieces.sort(() => Math.random() - 0.5);
+
+            pieces.forEach(p => {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.draggable = true;
+                tile.dataset.correctIndex = p;
+                
+                // Size tiles based on grid
+                const tileSize = Math.floor(340 / gridSize);
+                tile.style.width = tileSize + 'px';
+                tile.style.backgroundImage = `url('./${levels[currentLevel]}')`;
+                tile.style.backgroundSize = `${gridSize * 100}%`;
+                
                 let row = Math.floor(p / gridSize), col = p % gridSize;
                 let percent = 100 / (gridSize - 1);
-                div.style.backgroundPosition = `${col * percent}% ${row * percent}%`;
-                if (selectedTileIndex === i) div.classList.add('selected');
-                div.onclick = () => handleTileClick(i);
-                board.appendChild(div);
+                tile.style.backgroundPosition = `${col * percent}% ${row * percent}%`;
+
+                tile.addEventListener('dragstart', (e) => {
+                    window.draggedPiece = tile;
+                });
+
+                tray.appendChild(tile);
             });
         }
 
-        function handleTileClick(index) {
-            if (isShuffling) return;
-            if (selectedTileIndex === null) {
-                selectedTileIndex = index;
-            } else {
-                [pieces[selectedTileIndex], pieces[index]] = [pieces[index], pieces[selectedTileIndex]];
-                moves++;
-                document.getElementById('moves').innerText = moves;
-                selectedTileIndex = null;
+        function handleDrop(e) {
+            e.preventDefault();
+            const slot = e.target.closest('.slot');
+            if (slot && slot.children.length === 0) {
+                const piece = window.draggedPiece;
+                piece.style.width = "100%";
+                slot.appendChild(piece);
                 checkWin();
             }
-            drawBoard();
         }
 
-        function autoStart() {
-            isShuffling = true;
-            moves = 0;
-            document.getElementById('moves').innerText = moves;
-            document.getElementById('status-msg').innerText = "Memorize the Panda...";
-            document.getElementById('nextLevelBtn').style.display = 'none';
-            drawBoard();
-
-            setTimeout(() => {
-                pieces.sort(() => Math.random() - 0.5);
-                isShuffling = false;
-                document.getElementById('status-msg').innerText = "Solve it!";
-                drawBoard();
-            }, 3000);
-        }
-
-        function togglePreview(show) {
-            const overlay = document.getElementById('preview-overlay');
-            overlay.style.backgroundImage = `url('./${levels[currentLevel]}')`;
-            overlay.style.display = show ? 'block' : 'none';
-        }
-
-        function useHint() {
-            if (hintsLeft > 0 && !isShuffling) {
-                hintsLeft--;
-                localStorage.setItem('pandaHints', hintsLeft);
-                document.getElementById('hint-count').innerText = hintsLeft;
-                
-                const tiles = document.querySelectorAll('.tile');
-                tiles.forEach((tile, index) => {
-                    tile.classList.add(pieces[index] === index ? 'hint-correct' : 'hint-wrong');
-                });
-
-                setTimeout(() => {
-                    tiles.forEach(t => t.classList.remove('hint-correct', 'hint-wrong'));
-                }, 2000);
-            }
-        }
-
-        function checkWin() {
-            if (pieces.every((val, index) => val === index) && moves > 0) {
-                document.getElementById('status-msg').innerText = "EXCELLENT! 🏆";
-                document.getElementById('nextLevelBtn').style.display = 'inline-block';
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                // Update progress bar to completion for this level
-                document.getElementById('progress-fill').style.width = `${((currentLevel + 1) / 12) * 100}%`;
-            }
-        }
-
-        function nextLevel() {
-            currentLevel++;
-            if (currentLevel >= levels.length) {
-                alert("YOU ARE THE PANDA MASTER!");
-                currentLevel = 0;
-                hintsLeft = 3;
-            }
-            localStorage.setItem('pandaLevel', currentLevel);
-            initLevel();
-        }
-
-        window.onload = initLevel;
-    </script>
-</body>
-</html>
+        function check
