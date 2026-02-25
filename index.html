@@ -3,140 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Jigsaw Challenge</title>
+    <title>Panda Quest: 12 Stages</title>
     <style>
-        /* Modern Dark Theme for Reels Audience */
+        :root { --accent: #00f2ea; --bg: #0f172a; }
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            text-align: center; 
-            background: #000000; 
-            color: white; 
-            margin: 0; 
-            padding: 20px;
-            overflow-x: hidden;
+            font-family: 'Segoe UI', sans-serif; text-align: center; 
+            background: var(--bg); color: white; margin: 0; padding: 10px;
+        }
+        h1 { font-size: 1.5rem; color: var(--accent); margin: 10px 0; }
+        #status-msg { height: 20px; color: var(--accent); font-size: 0.9rem; margin-bottom: 10px; }
+        
+        .stats {
+            display: flex; justify-content: space-around; background: rgba(255,255,255,0.1);
+            padding: 10px; border-radius: 10px; margin-bottom: 15px; width: 90%; margin-left: auto; margin-right: auto;
         }
 
-        h1 { color: #ffffff; font-size: 24px; margin-bottom: 5px; }
-        .stats { margin-bottom: 20px; font-size: 18px; color: #a0a0a0; }
-        
-        /* The Board - This scales to fit phone screens */
         #puzzle-board { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 4px; 
-            width: 90vw; 
-            max-width: 360px; 
-            margin: 0 auto;
-            background: #262626;
-            padding: 8px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            display: grid; gap: 4px; width: 92vw; max-width: 400px; margin: 0 auto;
+            background: #1e293b; padding: 8px; border-radius: 12px;
         }
 
         .tile { 
-            aspect-ratio: 1 / 1; 
-            background-image: url('image.png'); /* THIS LOOKS FOR YOUR PNG */
-            background-size: 90vw 90vw; 
-            cursor: pointer;
-            border-radius: 4px;
-            touch-action: none; 
+            aspect-ratio: 1 / 1; background-size: 92vw 92vw; 
+            border-radius: 4px; cursor: pointer; transition: 0.2s;
         }
+        @media (min-width: 400px) { .tile { background-size: 400px 400px; } }
 
-        /* Responsive slicing for larger phones */
-        @media (min-width: 360px) { .tile { background-size: 360px 360px; } }
-
-        /* Background positions to slice the image */
-        .p0 { background-position: 0 0; } .p1 { background-position: 50% 0; } .p2 { background-position: 100% 0; }
-        .p3 { background-position: 0 50%; } .p4 { background-position: 50% 50%; } .p5 { background-position: 100% 50%; }
-        .p6 { background-position: 0 100%; } .p7 { background-position: 50% 100%; } .p8 { background-position: 100% 100%; }
-
-        button {
-            margin-top: 30px; 
-            padding: 15px 40px; 
-            font-size: 18px;
-            background: #0095f6; /* Instagram Blue */
-            color: #fff; 
-            border: none; 
-            border-radius: 30px; 
-            font-weight: bold; 
-            cursor: pointer;
-            transition: 0.2s;
+        .selected { outline: 4px solid white; box-shadow: 0 0 15px var(--accent); z-index: 5; }
+        .next-btn { 
+            margin-top: 20px; padding: 15px 30px; background: var(--accent); 
+            color: var(--bg); border: none; border-radius: 50px; font-weight: bold; display: none;
         }
-
-        button:active { transform: scale(0.95); background: #0077c7; }
     </style>
 </head>
 <body>
 
-    <h1>🐼 Panda Jigsaw</h1>
-    <div class="stats">Moves: <span id="moves">0</span></div>
+    <h1>🐼 Panda Quest</h1>
+    <div id="status-msg">Get Ready...</div>
+    <div class="stats">
+        <div>Moves: <b id="moves">0</b></div>
+        <div>Level: <b id="level-display">1/12</b></div>
+        <div>Grid: <b id="grid-display">3x3</b></div>
+    </div>
     
     <div id="puzzle-board"></div>
-
-    <button onclick="shuffle()">SHUFFLE & PLAY</button>
+    <button id="nextLevelBtn" class="next-btn" onclick="nextLevel()">NEXT LEVEL →</button>
 
     <script>
-        let moves = 0;
-        let selectedTile = null;
-        const board = document.getElementById('puzzle-board');
-        const pieces = [0,1,2,3,4,5,6,7,8];
+        let moves = 0, selectedTileIndex = null, pieces = [], currentLevel = 0, isShuffling = false, gridSize = 3;
         
-        function createBoard() {
+        const levels = [
+            'image1.png', 'image2.png', 'image3.png', 'image4.png',
+            'image5.png', 'image6.png', 'image7.png', 'image8.png',
+            'image9.png', 'image10.png', 'image11.png', 'image12.png'
+        ];
+
+        function initLevel() {
+            // Logic to increase difficulty
+            if (currentLevel < 4) gridSize = 3;
+            else if (currentLevel < 8) gridSize = 4;
+            else gridSize = 5;
+
+            document.getElementById('grid-display').innerText = `${gridSize}x${gridSize}`;
+            document.getElementById('level-display').innerText = `${currentLevel + 1}/12`;
+            
+            pieces = Array.from({length: gridSize * gridSize}, (_, i) => i);
+            setupBoard();
+            autoStart();
+        }
+
+        function setupBoard() {
+            const board = document.getElementById('puzzle-board');
+            board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            drawBoard();
+        }
+
+        function drawBoard() {
+            const board = document.getElementById('puzzle-board');
             board.innerHTML = '';
             pieces.forEach((p, i) => {
                 const div = document.createElement('div');
-                div.className = `tile p${p}`;
-                div.dataset.index = i;
+                div.className = 'tile';
+                div.style.backgroundImage = `url('${levels[currentLevel]}')`;
                 
-                // Click-to-Swap Logic (Works best for both mobile and desktop)
-                div.onclick = () => handleTileClick(div);
+                // Dynamic background calculation for any grid size
+                let row = Math.floor(p / gridSize);
+                let col = p % gridSize;
+                let percent = 100 / (gridSize - 1);
+                div.style.backgroundPosition = `${col * percent}% ${row * percent}%`;
                 
+                if (selectedTileIndex === i) div.classList.add('selected');
+                div.onclick = () => handleTileClick(i);
                 board.appendChild(div);
             });
         }
 
-        function handleTileClick(tile) {
-            if (selectedTile === null) {
-                selectedTile = tile;
-                tile.style.outline = "3px solid white";
-                tile.style.zIndex = "10";
+        function handleTileClick(index) {
+            if (isShuffling) return;
+            if (selectedTileIndex === null) {
+                selectedTileIndex = index;
             } else {
-                swapTiles(selectedTile, tile);
-                selectedTile = null;
+                [pieces[selectedTileIndex], pieces[index]] = [pieces[index], pieces[selectedTileIndex]];
+                moves++;
+                document.getElementById('moves').innerText = moves;
+                selectedTileIndex = null;
+                checkWin();
             }
+            drawBoard();
         }
 
-        function swapTiles(tile1, tile2) {
-            let idx1 = tile1.dataset.index;
-            let idx2 = tile2.dataset.index;
-            
-            let val1 = pieces[idx1];
-            let val2 = pieces[idx2];
-            
-            pieces[idx1] = val2;
-            pieces[idx2] = val1;
-            
-            moves++;
+        function autoStart() {
+            isShuffling = true;
+            moves = 0;
             document.getElementById('moves').innerText = moves;
-            createBoard();
-            checkWin();
+            document.getElementById('status-msg').innerText = "Memorize the pattern...";
+            document.getElementById('nextLevelBtn').style.display = 'none';
+            drawBoard();
+
+            setTimeout(() => {
+                pieces.sort(() => Math.random() - 0.5);
+                isShuffling = false;
+                document.getElementById('status-msg').innerText = "Solve the Panda!";
+                drawBoard();
+            }, 3000);
         }
 
         function checkWin() {
-            if (pieces.every((p, i) => p === i) && moves > 0) {
-                setTimeout(() => alert(`Victory! You solved it in ${moves} moves! 🐼`), 500);
+            if (pieces.every((val, index) => val === index) && moves > 0) {
+                document.getElementById('status-msg').innerText = "VICTORY! 🏆";
+                document.getElementById('nextLevelBtn').style.display = 'inline-block';
             }
         }
 
-        function shuffle() {
-            pieces.sort(() => Math.random() - 0.5);
-            moves = 0;
-            document.getElementById('moves').innerText = moves;
-            createBoard();
+        function nextLevel() {
+            currentLevel++;
+            if (currentLevel >= levels.length) {
+                alert("YOU ARE THE PANDA MASTER! All 12 levels cleared!");
+                currentLevel = 0;
+            }
+            initLevel();
         }
 
-        // Initialize the game
-        createBoard();
+        window.onload = initLevel;
     </script>
 </body>
 </html>
