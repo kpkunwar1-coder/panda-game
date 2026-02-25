@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest: Slider Edition</title>
+    <title>Panda Quest: Pro Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --accent: #00f2ea; --secondary: #ff00ff; --bg: #0b0e14; }
@@ -15,10 +15,12 @@
             touch-action: none; overflow: hidden;
         }
 
+        /* Level Selector Slider */
         .level-slider {
             display: flex; gap: 8px; overflow-x: auto; width: 95vw; 
             padding: 10px 0; margin-bottom: 10px; scrollbar-width: none;
         }
+        .level-slider::-webkit-scrollbar { display: none; }
         .level-dot {
             min-width: 35px; height: 35px; background: rgba(255,255,255,0.05);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -26,13 +28,15 @@
         }
         .level-dot.active { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(0,242,234,0.3); }
 
-        h1 { font-size: 1.2rem; letter-spacing: 2px; margin: 5px 0; }
+        h1 { font-size: 1.2rem; letter-spacing: 2px; margin: 5px 0; text-transform: uppercase; }
 
-        .controls { display: flex; gap: 15px; margin: 10px 0; }
+        /* Controls */
+        .controls { display: flex; gap: 10px; margin: 10px 0; }
         .btn-tool { 
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2);
-            color: white; padding: 8px 20px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;
+            color: white; padding: 8px 15px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;
         }
+        .btn-reset { border-color: #f87171; color: #f87171; }
 
         /* The Board */
         #puzzle-board { 
@@ -40,36 +44,39 @@
             background: rgba(0,0,0,0.5); padding: 5px; border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;
         }
-        .slot { aspect-ratio: 1/1; background: rgba(255,255,255,0.02); border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
-        .slot.hint-target { background: rgba(0, 242, 234, 0.2); border: 1px solid var(--accent); }
+        .slot { 
+            aspect-ratio: 1/1; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);
+            background-repeat: no-repeat; overflow: hidden;
+        }
 
-        /* 🖼️ The NEW Horizontal Piece Slider */
+        /* The Horizontal Piece Slider */
         .tray-container {
-            width: 100vw; background: rgba(0,0,0,0.4); 
+            width: 100vw; background: rgba(0,0,0,0.6); 
             padding: 20px 0; position: fixed; bottom: 0;
             border-top: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
         }
         #piece-tray { 
             display: flex; gap: 15px; overflow-x: scroll; 
-            padding: 0 20px; width: auto; scroll-snap-type: x proximity;
-            scrollbar-width: none; -webkit-overflow-scrolling: touch;
+            padding: 0 25px; width: auto; scrollbar-width: none;
         }
         #piece-tray::-webkit-scrollbar { display: none; }
 
         .tile { 
-            flex: 0 0 auto; aspect-ratio: 1/1; border-radius: 8px; 
-            box-shadow: 0 8px 15px rgba(0,0,0,0.4);
-            background-repeat: no-repeat; border: 1px solid rgba(255,255,255,0.1);
+            flex: 0 0 auto; aspect-ratio: 1/1; border-radius: 6px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            background-repeat: no-repeat; border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.1s;
         }
 
         #preview-overlay {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 80vw; height: 80vw; max-width: 320px; border: 2px solid var(--accent);
-            border-radius: 10px; z-index: 2000; background-size: cover; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border-radius: 10px; z-index: 2000; background-size: cover; box-shadow: 0 0 50px rgba(0,0,0,0.9);
         }
 
         .next-btn { 
-            position: fixed; top: 50%; padding: 15px 40px; 
+            position: fixed; top: 45%; padding: 15px 40px; 
             background: var(--accent); color: var(--bg); 
             border: none; border-radius: 50px; font-weight: 800; 
             display: none; z-index: 3000; box-shadow: 0 0 30px var(--accent);
@@ -83,6 +90,7 @@
     
     <div class="controls">
         <button class="btn-tool" onmousedown="showFull(true)" onmouseup="showFull(false)" ontouchstart="showFull(true)" ontouchend="showFull(false)">👁️ PREVIEW</button>
+        <button class="btn-tool btn-reset" onclick="initLevel()">🔄 RESET</button>
         <button class="btn-tool" onclick="useHint()">💡 HINT</button>
     </div>
 
@@ -98,10 +106,10 @@
     <script>
         let currentLevel = parseInt(localStorage.getItem('pandaLevel')) || 0;
         let gridSize = 3;
-        const levels = Array.from({length: 12}, (_, i) => `image${i + 1}.png`);
+        const levels = Array.from({length: 12}, (_, i) => i === 0 ? 'image.png' : `image${i + 1}.png`);
 
         function initLevel() {
-            // Build Level Dots
+            // Level Slider Update
             const slider = document.getElementById('levelSlider');
             slider.innerHTML = '';
             levels.forEach((_, i) => {
@@ -114,17 +122,32 @@
             gridSize = currentLevel < 4 ? 3 : (currentLevel < 8 ? 4 : 5);
             const board = document.getElementById('puzzle-board');
             const tray = document.getElementById('piece-tray');
+            
+            const boardWidth = Math.min(window.innerWidth * 0.9, 340);
+            const tileSize = boardWidth / gridSize;
+            
+            board.style.width = boardWidth + 'px';
             board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
             board.innerHTML = ''; tray.innerHTML = '';
             document.getElementById('nextLevelBtn').style.display = 'none';
 
+            // Create Slots with Ghost Background
             for(let i=0; i < gridSize * gridSize; i++) {
                 const slot = document.createElement('div');
                 slot.className = 'slot';
                 slot.dataset.index = i;
+                
+                // Ghost Image Logic
+                slot.style.backgroundImage = `url('./${levels[currentLevel]}')`;
+                slot.style.backgroundSize = `${boardWidth}px ${boardWidth}px`;
+                let sRow = Math.floor(i / gridSize), sCol = i % gridSize;
+                slot.style.backgroundPosition = `-${sCol * tileSize}px -${sRow * tileSize}px`;
+                slot.style.opacity = "0.1"; // Faint guide
+                
                 board.appendChild(slot);
             }
 
+            // Create Shuffled Pieces
             let pieces = Array.from({length: gridSize * gridSize}, (_, i) => i);
             pieces.sort(() => Math.random() - 0.5);
 
@@ -133,14 +156,18 @@
                 tile.className = 'tile';
                 tile.dataset.correctIndex = p;
                 
-                const tileSize = Math.floor(280 / gridSize);
-                tile.style.width = tileSize + 'px';
-                tile.style.backgroundImage = `url('./${levels[currentLevel]}')`;
-                tile.style.backgroundSize = `${gridSize * 100}%`;
+                // Sizing tiles for the tray
+                const trayTileSize = Math.floor(boardWidth / 4); 
+                tile.style.width = trayTileSize + 'px';
+                tile.style.height = trayTileSize + 'px';
                 
-                let row = Math.floor(p / gridSize), col = p % gridSize;
-                let percent = 100 / (gridSize - 1);
-                tile.style.backgroundPosition = `${col * percent}% ${row * percent}%`;
+                tile.style.backgroundImage = `url('./${levels[currentLevel]}')`;
+                tile.style.backgroundSize = `${boardWidth}px ${boardWidth}px`;
+                
+                // Perfect Pixel Cutting
+                let row = Math.floor(p / gridSize);
+                let col = p % gridSize;
+                tile.style.backgroundPosition = `-${col * tileSize}px -${row * tileSize}px`;
 
                 tile.addEventListener('touchstart', touchStart, {passive: false});
                 tile.addEventListener('touchmove', touchMove, {passive: false});
@@ -149,36 +176,18 @@
             });
         }
 
-        function showFull(show) {
-            const over = document.getElementById('preview-overlay');
-            over.style.backgroundImage = `url('./${levels[currentLevel]}')`;
-            over.style.display = show ? 'block' : 'none';
-        }
-
-        function useHint() {
-            const trayPieces = document.querySelectorAll('#piece-tray .tile');
-            if (trayPieces.length === 0) return;
-            const piece = trayPieces[0];
-            const targetSlot = document.querySelector(`.slot[data-index="${piece.dataset.correctIndex}"]`);
-            targetSlot.classList.add('hint-target');
-            setTimeout(() => targetSlot.classList.remove('hint-target'), 1500);
-        }
-
+        // --- Drag & Drop Logic ---
         let activeTile = null;
         let isDragging = false;
 
-        function touchStart(e) {
-            activeTile = e.target;
-            isDragging = false;
-        }
+        function touchStart(e) { activeTile = e.target; isDragging = false; }
 
         function touchMove(e) {
             if (!activeTile) return;
-            let touch = e.touches[0];
-            
-            // Only start "Dragging" if moved vertically significantly
             isDragging = true;
+            let touch = e.touches[0];
             activeTile.style.position = 'fixed';
+            activeTile.style.width = (340 / gridSize) + 'px'; // Scale to board size while dragging
             activeTile.style.left = (touch.clientX - activeTile.offsetWidth/2) + 'px';
             activeTile.style.top = (touch.clientY - activeTile.offsetHeight/2) + 'px';
             activeTile.style.zIndex = "5000";
@@ -186,10 +195,7 @@
 
         function touchEnd(e) {
             if (!activeTile) return;
-            if (!isDragging) {
-                activeTile = null;
-                return;
-            }
+            if (!isDragging) { activeTile = null; return; }
 
             let touch = e.changedTouches[0];
             activeTile.style.display = 'none';
@@ -201,11 +207,15 @@
             if (slot && slot.children.length === 0) {
                 activeTile.style.position = 'static';
                 activeTile.style.width = '100%';
+                activeTile.style.height = '100%';
                 slot.appendChild(activeTile);
+                slot.style.opacity = "1"; // Reveal full color
+                if(window.navigator.vibrate) window.navigator.vibrate(20);
                 checkWin();
             } else {
                 activeTile.style.position = 'static';
-                activeTile.style.width = Math.floor(280 / gridSize) + 'px';
+                activeTile.style.width = Math.floor(340 / 4) + 'px';
+                activeTile.style.height = Math.floor(340 / 4) + 'px';
                 document.getElementById('piece-tray').appendChild(activeTile);
             }
             activeTile = null;
@@ -221,13 +231,29 @@
                 }
             });
             if(filled === gridSize * gridSize && correct === filled) {
-                confetti();
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
                 document.getElementById('nextLevelBtn').style.display = 'block';
             }
         }
 
+        function showFull(show) {
+            const over = document.getElementById('preview-overlay');
+            over.style.backgroundImage = `url('./${levels[currentLevel]}')`;
+            over.style.display = show ? 'block' : 'none';
+        }
+
+        function useHint() {
+            const trayPieces = document.querySelectorAll('#piece-tray .tile');
+            if (trayPieces.length === 0) return;
+            const piece = trayPieces[0];
+            const targetSlot = document.querySelector(`.slot[data-index="${piece.dataset.correctIndex}"]`);
+            targetSlot.style.boxShadow = "inset 0 0 20px var(--accent)";
+            setTimeout(() => targetSlot.style.boxShadow = "none", 1500);
+        }
+
         function nextLevel() {
             currentLevel++;
+            if (currentLevel >= levels.length) currentLevel = 0;
             localStorage.setItem('pandaLevel', currentLevel);
             initLevel();
         }
