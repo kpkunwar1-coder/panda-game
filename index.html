@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Panda Quest Pro</title>
+    <title>Panda Quest: Pro Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { 
@@ -17,14 +17,24 @@
             color: white; margin: 0; padding: 15px; min-height: 100vh; overflow-x: hidden;
         }
 
+        /* Progress Bar Styles */
+        .progress-container {
+            width: 90%; max-width: 400px; height: 8px; background: rgba(255,255,255,0.1);
+            border-radius: 10px; margin: 10px auto 20px auto; overflow: hidden;
+        }
+        #progress-fill {
+            width: 0%; height: 100%; background: linear-gradient(to right, var(--accent), var(--secondary));
+            transition: width 0.5s ease; box-shadow: 0 0 10px var(--accent);
+        }
+
         h1 { 
             font-size: 1.8rem; letter-spacing: 2px; text-transform: uppercase;
             background: linear-gradient(to right, var(--accent), var(--secondary));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin: 10px 0; filter: drop-shadow(0 0 8px rgba(0, 242, 234, 0.3));
+            margin: 5px 0;
         }
 
-        #status-msg { font-weight: 600; color: var(--accent); margin-bottom: 15px; height: 20px; text-transform: uppercase; font-size: 0.8rem; }
+        #status-msg { font-weight: 600; color: var(--accent); margin-bottom: 10px; height: 20px; font-size: 0.8rem; }
 
         .stats {
             display: flex; justify-content: space-around; background: var(--card-bg);
@@ -37,9 +47,8 @@
         .game-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
         .control-btn { 
             background: var(--card-bg); border: 1px solid var(--accent); color: white;
-            padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: 0.2s;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
         }
-        .control-btn:active { transform: scale(0.9); background: var(--accent); color: var(--bg); }
 
         #puzzle-board { 
             display: grid; gap: 5px; width: 90vw; max-width: 400px; margin: 0 auto;
@@ -49,22 +58,26 @@
 
         .tile { 
             aspect-ratio: 1 / 1; background-size: 90vw 90vw; border-radius: 6px; 
-            cursor: pointer; position: relative; border: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer; position: relative; transition: 0.2s;
         }
         @media (min-width: 400px) { .tile { background-size: 400px 400px; } }
 
-        .selected { outline: 3px solid var(--accent); box-shadow: 0 0 15px var(--accent); z-index: 5; transform: scale(1.02); }
+        .selected { outline: 3px solid white; box-shadow: 0 0 15px var(--accent); z-index: 5; }
 
-        .hint-num { 
-            position: absolute; top: 2px; left: 2px; background: rgba(0,0,0,0.7); 
-            font-size: 10px; padding: 2px 4px; border-radius: 3px; pointer-events: none;
-        }
+        /* Modern Glow Hints */
+        .hint-correct { box-shadow: inset 0 0 25px #4ade80 !important; border: 2px solid #4ade80 !important; }
+        .hint-wrong { box-shadow: inset 0 0 25px #f87171 !important; border: 2px solid #f87171 !important; }
 
+        /* Preview Overlay & X Button */
         #preview-overlay {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 85vw; height: 85vw; max-width: 380px; max-height: 380px;
             background-size: cover; border: 4px solid var(--accent); border-radius: 15px; z-index: 1000;
-            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+        }
+        .close-x {
+            position: absolute; top: -15px; right: -15px; background: var(--secondary);
+            color: white; border: none; border-radius: 50%; width: 35px; height: 35px;
+            font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
         .next-btn { 
@@ -75,6 +88,7 @@
 </head>
 <body>
 
+    <div class="progress-container"><div id="progress-fill"></div></div>
     <h1>🐼 Panda Quest</h1>
     <div id="status-msg">Loading...</div>
 
@@ -85,12 +99,16 @@
     </div>
 
     <div class="game-controls">
-        <button class="control-btn" onmousedown="togglePreview(true)" onmouseup="togglePreview(false)" ontouchstart="togglePreview(true)" ontouchend="togglePreview(false)">👁️ VIEW</button>
+        <button class="control-btn" onclick="togglePreview(true)">👁️ VIEW</button>
         <button class="control-btn" onclick="useHint()">💡 HINT</button>
     </div>
     
     <div id="puzzle-board"></div>
-    <div id="preview-overlay"></div>
+
+    <div id="preview-overlay">
+        <button class="close-x" onclick="togglePreview(false)">X</button>
+    </div>
+
     <button id="nextLevelBtn" class="next-btn" onclick="nextLevel()">NEXT LEVEL →</button>
 
     <script>
@@ -109,35 +127,28 @@
             else if (currentLevel < 8) gridSize = 4;
             else gridSize = 5;
 
+            // Update UI
             document.getElementById('level-display').innerText = `${currentLevel + 1}/12`;
             document.getElementById('hint-count').innerText = hintsLeft;
+            document.getElementById('progress-fill').style.width = `${((currentLevel) / 12) * 100}%`;
+
             pieces = Array.from({length: gridSize * gridSize}, (_, i) => i);
-            
             const board = document.getElementById('puzzle-board');
             board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
             
             autoStart();
         }
 
-        function drawBoard(showNumbers = false) {
+        function drawBoard() {
             const board = document.getElementById('puzzle-board');
             board.innerHTML = '';
             pieces.forEach((p, i) => {
                 const div = document.createElement('div');
                 div.className = 'tile';
                 div.style.backgroundImage = `url('./${levels[currentLevel]}')`;
-                
                 let row = Math.floor(p / gridSize), col = p % gridSize;
                 let percent = 100 / (gridSize - 1);
                 div.style.backgroundPosition = `${col * percent}% ${row * percent}%`;
-                
-                if (showNumbers) {
-                    const span = document.createElement('span');
-                    span.className = 'hint-num';
-                    span.innerText = p + 1;
-                    div.appendChild(span);
-                }
-
                 if (selectedTileIndex === i) div.classList.add('selected');
                 div.onclick = () => handleTileClick(i);
                 board.appendChild(div);
@@ -169,9 +180,9 @@
             setTimeout(() => {
                 pieces.sort(() => Math.random() - 0.5);
                 isShuffling = false;
-                document.getElementById('status-msg').innerText = "Solve the Puzzle!";
+                document.getElementById('status-msg').innerText = "Solve it!";
                 drawBoard();
-            }, 4000);
+            }, 3000);
         }
 
         function togglePreview(show) {
@@ -185,23 +196,32 @@
                 hintsLeft--;
                 localStorage.setItem('pandaHints', hintsLeft);
                 document.getElementById('hint-count').innerText = hintsLeft;
-                drawBoard(true);
-                setTimeout(() => drawBoard(false), 2500);
+                
+                const tiles = document.querySelectorAll('.tile');
+                tiles.forEach((tile, index) => {
+                    tile.classList.add(pieces[index] === index ? 'hint-correct' : 'hint-wrong');
+                });
+
+                setTimeout(() => {
+                    tiles.forEach(t => t.classList.remove('hint-correct', 'hint-wrong'));
+                }, 2000);
             }
         }
 
         function checkWin() {
             if (pieces.every((val, index) => val === index) && moves > 0) {
-                document.getElementById('status-msg').innerText = "LEVEL COMPLETE! 🏆";
+                document.getElementById('status-msg').innerText = "EXCELLENT! 🏆";
                 document.getElementById('nextLevelBtn').style.display = 'inline-block';
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f2ea', '#ff00ff'] });
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                // Update progress bar to completion for this level
+                document.getElementById('progress-fill').style.width = `${((currentLevel + 1) / 12) * 100}%`;
             }
         }
 
         function nextLevel() {
             currentLevel++;
             if (currentLevel >= levels.length) {
-                alert("CONGRATULATIONS! You are a Panda Master!");
+                alert("YOU ARE THE PANDA MASTER!");
                 currentLevel = 0;
                 hintsLeft = 3;
             }
