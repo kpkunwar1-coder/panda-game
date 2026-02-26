@@ -5,32 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pandu's Saga Adventure</title>
     <style>
-        /* This part makes the game look nice */
         body { background: #1a1a1a; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-        .game-container { max-width: 500px; margin: auto; border: 4px solid #444; border-radius: 15px; overflow: hidden; background: #000; }
-        img { max-width: 100%; height: auto; display: block; }
-        .menu-bar { padding: 15px; background: #333; display: flex; justify-content: space-around; }
-        .btn { padding: 10px 15px; background: #FFD700; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: #333; }
-        #puzzle-view { display: none; } /* Hidden until a level is clicked */
+        .game-container { max-width: 500px; margin: auto; border: 4px solid #444; border-radius: 15px; overflow: hidden; background: #000; position: relative; }
+        
+        /* Map Screen Styling */
+        #map-view img { width: 100%; display: block; }
+        
+        /* Puzzle Screen Styling */
+        #puzzle-view { display: none; padding-bottom: 20px; }
+        #puzzle-view img { width: 100%; border-bottom: 2px solid #444; }
+
+        /* Button Grid */
+        .level-grid { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 10px; 
+            padding: 20px; 
+            background: #333; 
+        }
+        
+        .btn { padding: 10px; background: #FFD700; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: #333; }
+        .btn-back { margin-top: 20px; background: #ff4444; color: white; }
+        .btn:hover { background: #fff; }
     </style>
 </head>
 <body>
 
     <div class="game-container">
         <div id="map-view">
-            <img src="assets/map/map_saga_20_pedestals.png" alt="Saga Map">
-            <div class="menu-bar">
-                <button class="btn" onclick="openLevel(1)">Test Level 1</button>
-                <button class="btn" onclick="openLevel(9)">Test Level 9</button>
+            <img src="assets/map/map_saga_background.png" alt="Saga Map">
+            
+            <div class="level-grid">
+                <button class="btn" onclick="openLevel(1)">1</button>
+                <button class="btn" onclick="openLevel(2)">2</button>
+                <button class="btn" onclick="openLevel(3)">3</button>
+                <button class="btn" onclick="openLevel(4)">4</button>
+                <button class="btn" onclick="openLevel(5)">5</button>
+                <button class="btn" onclick="openLevel(6)">6</button>
+                <button class="btn" onclick="openLevel(7)">7</button>
+                <button class="btn" onclick="openLevel(8)">8</button>
+                <button class="btn" onclick="openLevel(9)">9</button>
+                <button class="btn" onclick="openLevel(10)">10</button>
             </div>
         </div>
 
         <div id="puzzle-view">
             <h2 id="level-title">Level 1</h2>
             <img id="puzzle-image" src="" alt="Level Puzzle">
-            <div class="menu-bar">
-                <button class="btn" onclick="goBack()">Back to Map</button>
-            </div>
+            <button class="btn btn-back" onclick="goBack()">Back to Map</button>
         </div>
     </div>
 
