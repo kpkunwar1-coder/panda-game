@@ -2,164 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pandu Panda: The Saga</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pandu's Saga Adventure</title>
     <style>
-        :root { --accent: #ff85a1; --bg: #fdfbfb; --glass: rgba(255, 255, 255, 0.95); }
-        
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Segoe UI', sans-serif; background: var(--bg); overflow: hidden; }
-
-        .screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
-        .active { display: flex; }
-
-        /* --- HOME --- */
-        #screen-home { background: url('hero-start.png') center/cover no-repeat; }
-        .btn-hitbox { position: absolute; top: 55%; width: 200px; height: 80px; cursor: pointer; animation: bounce 2s infinite ease-in-out; background: transparent; border: none; }
-
-        /* --- MAP SCREEN --- */
-        #screen-map { background: #e0f7fa; background: linear-gradient(#e0f7fa, #ffffff); }
-        .map-path { display: flex; flex-direction: column-reverse; gap: 40px; align-items: center; padding: 50px; }
-        .level-node { 
-            width: 70px; height: 70px; border-radius: 50%; background: white; 
-            border: 4px solid var(--accent); display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1.5rem; color: var(--accent); cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: relative;
-        }
-        .level-node.locked { background: #ccc; border-color: #999; color: #666; cursor: not-allowed; opacity: 0.6; }
-        .level-node.current { transform: scale(1.2); background: var(--accent); color: white; box-shadow: 0 0 20px var(--accent); }
-
-        /* --- SUCCESS MODAL --- */
-        #screen-success { background: rgba(0,0,0,0.6); z-index: 100; }
-        .win-card { background: white; padding: 30px; border-radius: 30px; text-align: center; width: 80%; max-width: 300px; border: 5px solid var(--accent); }
-
-        /* --- GAME HUD --- */
-        #screen-game { background: linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)), url('story-1-4.png') center/cover; }
-        .hud-top { width: 90%; max-width: 380px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .hud-pill { background: var(--glass); padding: 8px 15px; border-radius: 20px; font-weight: bold; border: 2px solid white; color: var(--accent); }
-
-        #puzzle-board { display: grid; gap: 6px; width: 90vw; max-width: 380px; background: var(--glass); padding: 12px; border-radius: 30px; border: 4px solid white; }
-        .tile { aspect-ratio: 1/1; border-radius: 12px; cursor: pointer; transition: 0.2s; background-size: 360px 360px; }
-        .tile.selected { transform: scale(1.05); border: 3px solid var(--accent); }
-
-        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        /* This part makes the game look nice */
+        body { background: #1a1a1a; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .game-container { max-width: 500px; margin: auto; border: 4px solid #444; border-radius: 15px; overflow: hidden; background: #000; }
+        img { max-width: 100%; height: auto; display: block; }
+        .menu-bar { padding: 15px; background: #333; display: flex; justify-content: space-around; }
+        .btn { padding: 10px 15px; background: #FFD700; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: #333; }
+        #puzzle-view { display: none; } /* Hidden until a level is clicked */
     </style>
 </head>
 <body>
 
-    <audio id="bg-music" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
-    <audio id="snd-pop" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <div class="game-container">
+        <div id="map-view">
+            <img src="assets/map/map_saga_20_pedestals.png" alt="Saga Map">
+            <div class="menu-bar">
+                <button class="btn" onclick="openLevel(1)">Test Level 1</button>
+                <button class="btn" onclick="openLevel(9)">Test Level 9</button>
+            </div>
+        </div>
 
-    <div id="screen-home" class="screen active">
-        <button class="btn-hitbox" onclick="goToMap()"></button>
-    </div>
-
-    <div id="screen-map" class="screen">
-        <h2 style="color:var(--accent)">ADVENTURE MAP</h2>
-        <div class="map-path" id="map-nodes"></div>
-    </div>
-
-    <div id="screen-success" class="screen">
-        <div class="win-card">
-            <h1 style="color:var(--accent); margin-top:0;">SWEET!</h1>
-            <p>Level <span id="win-lvl">1</span> Completed!</p>
-            <button class="hud-pill" style="width:100%; cursor:pointer; padding:15px;" onclick="goToMap()">CONTINUE</button>
+        <div id="puzzle-view">
+            <h2 id="level-title">Level 1</h2>
+            <img id="puzzle-image" src="" alt="Level Puzzle">
+            <div class="menu-bar">
+                <button class="btn" onclick="goBack()">Back to Map</button>
+            </div>
         </div>
     </div>
 
-    <div id="screen-game" class="screen">
-        <div class="hud-top">
-            <div class="hud-pill">LVL <span id="lvl-txt">1</span></div>
-            <div class="hud-pill">MOVES: <span id="moves-txt">0</span></div>
-        </div>
-        <div id="puzzle-board"></div>
-    </div>
-
-    <script>
-        let maxReached = parseInt(localStorage.getItem('pandaLevel')) || 1;
-        let activeLevel = 1;
-        let grid, moves, tiles, selection;
-
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-
-        function goToMap() {
-            showScreen('screen-map');
-            renderMap();
-        }
-
-        function renderMap() {
-            const container = document.getElementById('map-nodes');
-            container.innerHTML = '';
-            // Show 5 levels on the map
-            for (let i = 1; i <= 5; i++) {
-                const node = document.createElement('div');
-                node.className = `level-node ${i > maxReached ? 'locked' : ''} ${i === maxReached ? 'current' : ''}`;
-                node.innerText = i;
-                if (i <= maxReached) node.onclick = () => startGame(i);
-                container.appendChild(node);
-            }
-        }
-
-        function startGame(lvl) {
-            activeLevel = lvl;
-            const gameImages = ['image.png', 'image2.png', 'image3.png', 'image4.png', 'image5.png'];
-            let currentImg = lvl === 1 ? 'image3.png' : gameImages[(lvl - 1) % gameImages.length];
-            
-            grid = lvl <= 2 ? 3 : 4;
-            moves = grid * 10;
-            tiles = Array.from({length: grid * grid}, (_, i) => i);
-            tiles.sort(() => Math.random() - 0.5);
-            selection = null;
-
-            document.getElementById('lvl-txt').innerText = lvl;
-            document.getElementById('moves-txt').innerText = moves;
-            showScreen('screen-game');
-            renderBoard(currentImg);
-        }
-
-        function renderBoard(img) {
-            const board = document.getElementById('puzzle-board');
-            board.style.gridTemplateColumns = `repeat(${grid}, 1fr)`;
-            board.innerHTML = '';
-            tiles.forEach((val, i) => {
-                const div = document.createElement('div');
-                div.className = 'tile' + (selection === i ? ' selected' : '');
-                div.style.backgroundImage = `url('${img}')`;
-                let r = Math.floor(val/grid), c = val%grid;
-                div.style.backgroundPosition = `-${c*(360/grid)}px -${r*(360/grid)}px`;
-                div.onclick = () => {
-                    if (selection === null) { selection = i; renderBoard(img); }
-                    else {
-                        if (selection !== i) {
-                            [tiles[selection], tiles[i]] = [tiles[i], tiles[selection]];
-                            moves--;
-                            document.getElementById('snd-pop').play();
-                            document.getElementById('moves-txt').innerText = moves;
-                        }
-                        selection = null; renderBoard(img); checkWin();
-                    }
-                };
-                board.appendChild(div);
-            });
-        }
-
-        function checkWin() {
-            if (tiles.every((v, i) => v === i)) {
-                confetti();
-                if (activeLevel === maxReached) {
-                    maxReached++;
-                    localStorage.setItem('pandaLevel', maxReached);
-                }
-                document.getElementById('win-lvl').innerText = activeLevel;
-                setTimeout(() => showScreen('screen-success'), 1500);
-            } else if (moves <= 0) {
-                alert("Out of moves!");
-                goToMap();
-            }
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
