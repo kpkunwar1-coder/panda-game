@@ -5,34 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pandu's Adventure</title>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; margin: 0; font-family: sans-serif; }
-        .game-container { max-width: 500px; margin: auto; position: relative; background: #000; min-height: 100vh; overflow: hidden; }
+        body { background: #000; color: white; text-align: center; margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
+        .game-container { max-width: 500px; margin: auto; position: relative; height: 100vh; background: #1a1a1a; }
         .screen { display: none; width: 100%; height: 100%; position: relative; }
         .active { display: block; }
-        img { width: 100%; display: block; }
+        img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-        /* The Invisible Start Hotspot */
+        /* The Invisible Start Hotspot over the Bamboo Button */
         #start-hotspot {
             position: absolute;
-            bottom: 5%;      /* Adjusted to sit over the bamboo button */
-            left: 15%;        /* Centered width-wise */
-            width: 70%;       /* Covers the bamboo area */
-            height: 12%;      /* Height of the button graphic */
+            bottom: 3%;      /* Adjusted for the bamboo button position */
+            left: 10%; 
+            width: 80%; 
+            height: 18%; 
             cursor: pointer;
-            /* background: rgba(255,0,0,0.3); */ /* Uncomment this to see the box while testing! */
+            z-index: 100;
+            /* border: 2px solid lime; */ /* Uncomment to see the clickable area */
         }
 
         .btn-next {
             position: absolute;
-            bottom: 5%;
-            padding: 15px 30px;
-            background: rgba(0,0,0,0.8);
-            color: gold;
-            border: 2px solid gold;
-            border-radius: 10px;
-            cursor: pointer;
+            bottom: 8%;
             left: 50%;
             transform: translateX(-50%);
+            padding: 15px 40px;
+            background: #FFD700;
+            color: #333;
+            border: 3px solid white;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            z-index: 101;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
     </style>
 </head>
@@ -40,7 +45,7 @@
 
     <div class="game-container">
         <div id="story-view" class="screen active">
-            <img id="story-img" src="assets/backgrounds/landing_with_button.jpg">
+            <img id="story-img" src="assets/backgrounds/ui_landing_page_start.jpg" alt="Pandu's World">
             
             <div id="start-hotspot" onclick="beginAdventure()"></div>
             
@@ -49,7 +54,7 @@
 
         <div id="map-view" class="screen">
             <img src="assets/map/map_saga_background.png">
-        </div>
+            </div>
     </div>
 
     <script src="script.js"></script>
