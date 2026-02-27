@@ -5,47 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pandu's Adventure</title>
     <style>
-        body { background: #000; color: white; text-align: center; margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
+        /* CSS: This is the design part */
+        body { background: #000; color: white; text-align: center; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .game-container { max-width: 500px; margin: auto; position: relative; height: 100vh; background: #1a1a1a; }
         .screen { display: none; width: 100%; height: 100%; position: relative; }
         .active { display: block; }
-        img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-        /* The Invisible Hotspot for the Infused Buttons */
-        .click-zone {
-            position: absolute;
-            bottom: 2%;
-            left: 5%; 
-            width: 90%; 
-            height: 18%; 
-            cursor: pointer;
-            z-index: 100;
+        /* Level Hitboxes */
+        .hitbox { position: absolute; cursor: pointer; z-index: 100; }
+
+        /* Puzzle Styling */
+        #puzzle-ui {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80%; background: rgba(0, 0, 0, 0.85); border: 4px solid #4e2e1a;
+            border-radius: 20px; padding: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-
-        /* Map Level Markers */
-        .level-node {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            background: #FFD700;
-            border: 2px solid white;
-            border-radius: 50%;
-            color: black;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 0 10px gold;
-            font-size: 1.1rem;
-            transition: transform 0.2s;
+        .bamboo-row { display: flex; justify-content: center; gap: 15px; margin: 20px 0; }
+        .bamboo-seg {
+            width: 60px; height: 100px; background: #7ca852; border: 3px solid #5d7e3e;
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 2.5rem; color: #fff; cursor: pointer; text-shadow: 2px 2px 4px #000;
         }
-
-        .level-node:hover { transform: scale(1.2); }
-
-        /* Page Turn Animation */
-        .page-slide { animation: slideIn 0.5s ease-out forwards; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: #d4a373; color: #4e2e1a; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -53,22 +35,24 @@
     <div class="game-container">
         <div id="story-view" class="screen active">
             <img id="story-img" src="assets/backgrounds/ui_landing_page_start.png">
-            <div id="story-click-zone" class="click-zone" onclick="handleStoryClick()"></div>
+            <div class="hitbox" style="bottom:2%; left:10%; width:80%; height:18%;" onclick="advanceStory()"></div>
         </div>
 
         <div id="map-view" class="screen">
-            <img src="assets/map/map_saga_background.png">
-            
-            <div class="level-node" style="bottom: 12%; left: 48%;" onclick="startLevel(1)">1</div>
-            <div class="level-node" style="bottom: 18%; left: 32%;" onclick="startLevel(2)">2</div>
-            <div class="level-node" style="bottom: 25%; left: 22%;" onclick="startLevel(3)">3</div>
-            <div class="level-node" style="bottom: 35%; left: 30%;" onclick="startLevel(4)">4</div>
-            <div class="level-node" style="bottom: 42%; left: 45%;" onclick="startLevel(5)">5</div>
-            <div class="level-node" style="bottom: 50%; left: 60%;" onclick="startLevel(6)">6</div>
-            <div class="level-node" style="bottom: 60%; left: 55%;" onclick="startLevel(7)">7</div>
-            <div class="level-node" style="bottom: 68%; left: 40%;" onclick="startLevel(8)">8</div>
-            <div class="level-node" style="bottom: 75%; left: 25%;" onclick="startLevel(9)">9</div>
-            <div class="level-node" style="bottom: 85%; left: 35%;" onclick="startLevel(10)">10</div>
+            <img src="assets/map/map_saga_background1.jpg">
+            <div class="hitbox" style="bottom: 2%; left: 42%; width: 15%; height: 8%;" onclick="startLevel(1)"></div>
+            <div class="hitbox" style="bottom: 12%; left: 48%; width: 15%; height: 7%;" onclick="startLevel(2)"></div>
+            </div>
+
+        <div id="puzzle-view" class="screen">
+            <img src="assets/backgrounds/bg_mystical_gates.png">
+            <div class="back-btn" onclick="exitLevel()">MAP</div>
+            <div id="puzzle-ui">
+                <h2>BAMBOO LOCK</h2>
+                <p>Align the numbers to open the gate!</p>
+                <div class="bamboo-row" id="bamboo-container">
+                    </div>
+            </div>
         </div>
     </div>
 
