@@ -1,9 +1,29 @@
+let currentStoryStep = 0;
 let score = 0;
 const width = 7;
 const gems = [];
 const gemIcons = ['💎', '🍎', '⭐', '🍀', '🔥'];
 
-let startId, endId;
+// Swipe Tracking
+let startId, startX, startY;
+
+// 1. NAVIGATION LOGIC (Safe & Simple)
+function advanceStory() {
+    currentStoryStep++;
+    const images = [
+        "assets/backgrounds/ui_landing_page_start.png", 
+        "assets/backgrounds/bg_pandu_home.png", 
+        "assets/backgrounds/bg_ancient_ruins.png", 
+        "assets/backgrounds/bg_mystical_gates.png"
+    ];
+
+    if (currentStoryStep < images.length) {
+        document.getElementById('story-img').src = images[currentStoryStep];
+    } else {
+        document.getElementById('story-view').classList.remove('active');
+        document.getElementById('map-view').classList.add('active');
+    }
+}
 
 function startLevel(num) {
     score = 0;
@@ -13,99 +33,134 @@ function startLevel(num) {
     createBoard();
 }
 
+// 2. GAME BOARD LOGIC
 function createBoard() {
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
     gems.length = 0;
+
     for (let i = 0; i < width * width; i++) {
         const gem = document.createElement('div');
         gem.className = 'gem';
-        gem.setAttribute('id', i);
-        // Fill with random icons, but ensure no 3-in-a-row at the start
+        gem.id = i;
+        // Random icon
         gem.innerText = gemIcons[Math.floor(Math.random() * gemIcons.length)];
-
-        // Touch events for swiping
-        gem.addEventListener('touchstart', (e) => { startId = parseInt(e.target.id); });
-        gem.addEventListener('touchend', handleSwipe);
         
+        // Listeners attached ONLY to the gems
+        gem.addEventListener('touchstart', touchStart, {passive: true});
+        gem.addEventListener('touchend', touchEnd, {passive: true});
+
         grid.appendChild(gem);
         gems.push(gem);
     }
 }
 
-function handleSwipe(e) {
-    let touch = e.changedTouches[0];
-    let targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-    
-    if (targetEl && targetEl.className === 'gem') {
-        endId = parseInt(targetEl.id);
-        
-        // Calculate if the move is adjacent (Up, Down, Left, Right)
-        const validMoves = [startId - 1, startId + 1, startId - width, startId + width];
-        
-        if (validMoves.includes(endId)) {
-            // Swap the icons
-            let tempIcon = gems[startId].innerText;
-            gems[startId].innerText = gems[endId].innerText;
-            gems[endId].innerText = tempIcon;
+// 3. SWIPE GESTURE LOGIC
+function touchStart(e) {
+    startId = parseInt(e.target.id);
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+}
 
-            // After swapping, check if it actually created a match
-            if (!checkMatches()) {
-                // If NO match was made, swap back (just like Candy Crush)
-                setTimeout(() => {
-                    gems[endId].innerText = gems[startId].innerText;
-                    gems[startId].innerText = tempIcon;
-                }, 300);
-            }
+function touchEnd(e) {
+    let endX = e.changedTouches[0].clientX;
+    let endY = e.changedTouches[0].clientY;
+
+    let diffX = endX - startX;
+    let diffY = endY - startY;
+    let endId = startId;
+
+    // Threshold: swipe must be at least 30px to count
+    if (Math.abs(diffX) > 30 || Math.abs(diffY) > 30) {
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+            // Horizontal swipe
+            endId = (diffX > 0) ? startId + 1 : startId - 1;
+            // Prevent wrapping across edges
+            if (Math.floor(startId / width) !== Math.floor(endId / width)) endId = startId;
+        } else {
+            // Vertical swipe
+            endId = (diffY > 0) ? startId + width : startId - width;
+        }
+
+        if (gems[endId]) {
+            executeSwap(startId, endId);
         }
     }
 }
 
-function checkMatches() {
-    let hasMatch = false;
-    let toClear = new Set();
+// 4. CANDY CRUSH MECHANICS
+function executeSwap(id1, id2) {
+    let icon1 = gems[id1].innerText;
+    let icon2 = gems[id2].innerText;
 
-    // Check Horizontal Matches
-    for (let i = 0; i < 49; i++) {
-        if (i % width < 5) { // Ensure there are 2 gems to the right
+    // Visual Swap
+    gems[id1].innerText = icon2;
+    gems[id2].innerText = icon1;
+
+    // Check if the swap created a match
+    let matchFound = checkMatches();
+
+    if (!matchFound) {
+        // No match? Swap back after a short delay
+        setTimeout(() => {
+            gems[id1].innerText = icon1;
+            gems[id2].innerText = icon2;
+        }, 300);
+    }
+}
+
+
+
+function checkMatches() {
+    let matchedIndices = new Set();
+
+    // Check Rows
+    for (let r = 0; r < width; r++) {
+        for (let c = 0; c < width - 2; c++) {
+            let i = r * width + c;
             if (gems[i].innerText === gems[i+1].innerText && gems[i].innerText === gems[i+2].innerText) {
-                toClear.add(i); toClear.add(i+1); toClear.add(i+2);
-                hasMatch = true;
+                matchedIndices.add(i); matchedIndices.add(i+1); matchedIndices.add(i+2);
             }
         }
     }
 
-    // Check Vertical Matches
-    for (let i = 0; i < 35; i++) { // Ensure there are 2 gems below
-        if (gems[i].innerText === gems[i+width].innerText && gems[i].innerText === gems[i+(width*2)].innerText) {
-            toClear.add(i); toClear.add(i+width); toClear.add(i+(width*2));
-            hasMatch = true;
+    // Check Columns
+    for (let c = 0; c < width; c++) {
+        for (let r = 0; r < width - 2; r++) {
+            let i = r * width + c;
+            if (gems[i].innerText === gems[i+width].innerText && gems[i].innerText === gems[i+width*2].innerText) {
+                matchedIndices.add(i); matchedIndices.add(i+width); matchedIndices.add(i+width*2);
+            }
         }
     }
 
-    if (hasMatch) {
-        // Clear matched gems and replace with new ones
-        toClear.forEach(index => {
-            gems[index].style.transform = "scale(0)"; // Simple pop effect
-            setTimeout(() => {
-                gems[index].innerText = gemIcons[Math.floor(Math.random() * gemIcons.length)];
-                gems[index].style.transform = "scale(1)";
-            }, 200);
-        });
-
-        score += toClear.size * 10;
-        document.getElementById('score').innerText = score;
-
-        if (score >= 100) {
-            alert("SENSATIONAL! Path to the Great Tree is clear!");
-            exitLevel();
-        }
-        
-        // Check again for "Chain Reactions" (new gems forming matches)
-        setTimeout(checkMatches, 400);
+    if (matchedIndices.size > 0) {
+        processMatches(matchedIndices);
         return true;
     }
     return false;
+}
+
+function processMatches(indices) {
+    indices.forEach(i => {
+        score += 10;
+        // Visual "Pop"
+        gems[i].style.transform = "scale(0)";
+        setTimeout(() => {
+            gems[i].innerText = gemIcons[Math.floor(Math.random() * gemIcons.length)];
+            gems[i].style.transform = "scale(1)";
+        }, 200);
+    });
+
+    document.getElementById('score').innerText = score;
+
+    if (score >= 150) {
+        alert("PANDU-STIC! Level 1 Complete!");
+        exitLevel();
+    } else {
+        // Cascade check for chain reactions
+        setTimeout(checkMatches, 450);
+    }
 }
 
 function exitLevel() {
