@@ -5,19 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pandu's Adventure</title>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; margin: 0; }
-        .game-container { max-width: 500px; margin: auto; position: relative; background: #000; min-height: 100vh; }
-        .screen { display: none; }
+        body { background: #1a1a1a; color: white; text-align: center; margin: 0; font-family: sans-serif; }
+        .game-container { max-width: 500px; margin: auto; position: relative; background: #000; min-height: 100vh; overflow: hidden; }
+        .screen { display: none; width: 100%; height: 100%; position: relative; }
         .active { display: block; }
         img { width: 100%; display: block; }
-        .ui-overlay { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: center; gap: 10px; }
-        .btn { padding: 15px 25px; background: #FFD700; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; }
-        
-        /* Level Hotspot Example */
-        #level-target { 
-            position: absolute; width: 50px; height: 50px; 
-            border: 2px dashed rgba(255,255,255,0.5); /* Hide this later */
-            top: 50%; left: 50%; /* We will adjust per level */
+
+        /* The Invisible Start Hotspot */
+        #start-hotspot {
+            position: absolute;
+            bottom: 5%;      /* Adjusted to sit over the bamboo button */
+            left: 15%;        /* Centered width-wise */
+            width: 70%;       /* Covers the bamboo area */
+            height: 12%;      /* Height of the button graphic */
+            cursor: pointer;
+            /* background: rgba(255,0,0,0.3); */ /* Uncomment this to see the box while testing! */
+        }
+
+        .btn-next {
+            position: absolute;
+            bottom: 5%;
+            padding: 15px 30px;
+            background: rgba(0,0,0,0.8);
+            color: gold;
+            border: 2px solid gold;
+            border-radius: 10px;
+            cursor: pointer;
+            left: 50%;
+            transform: translateX(-50%);
         }
     </style>
 </head>
@@ -25,26 +40,15 @@
 
     <div class="game-container">
         <div id="story-view" class="screen active">
-            <img id="story-img" src="assets/backgrounds/ui_landing_page_start.jpg">
-            <div class="ui-overlay">
-                <button class="btn" onclick="advanceStory()">CONTINUE</button>
-            </div>
+            <img id="story-img" src="assets/backgrounds/landing_with_button.jpg">
+            
+            <div id="start-hotspot" onclick="beginAdventure()"></div>
+            
+            <button id="next-button" class="btn-next" onclick="advanceStory()" style="display:none;">CONTINUE...</button>
         </div>
 
         <div id="map-view" class="screen">
             <img src="assets/map/map_saga_background.png">
-            <div class="ui-overlay" style="flex-wrap: wrap; bottom: 10px;">
-                <button class="btn" onclick="loadLevel(1)">1</button>
-                <button class="btn" onclick="loadLevel(9)">9</button>
-            </div>
-        </div>
-
-        <div id="puzzle-view" class="screen">
-            <h2 id="level-title">Find the Object!</h2>
-            <div style="position: relative;">
-                <img id="puzzle-img" src="">
-                <div id="level-target" onclick="completeLevel()"></div>
-            </div>
         </div>
     </div>
 
