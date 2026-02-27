@@ -5,29 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pandu's Adventure</title>
     <style>
-        /* CSS: This is the design part */
-        body { background: #000; color: white; text-align: center; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #000; color: white; text-align: center; margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
         .game-container { max-width: 500px; margin: auto; position: relative; height: 100vh; background: #1a1a1a; }
         .screen { display: none; width: 100%; height: 100%; position: relative; }
         .active { display: block; }
         img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-        /* Level Hitboxes */
+        /* Invisible Hitboxes for Map */
         .hitbox { position: absolute; cursor: pointer; z-index: 100; }
 
-        /* Puzzle Styling */
-        #puzzle-ui {
+        /* Match-3 Game UI */
+        #game-ui {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; background: rgba(0, 0, 0, 0.85); border: 4px solid #4e2e1a;
-            border-radius: 20px; padding: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            width: 90%; background: rgba(0,0,0,0.8); border: 4px solid #7ca852;
+            border-radius: 15px; padding: 10px;
         }
-        .bamboo-row { display: flex; justify-content: center; gap: 15px; margin: 20px 0; }
-        .bamboo-seg {
-            width: 60px; height: 100px; background: #7ca852; border: 3px solid #5d7e3e;
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-size: 2.5rem; color: #fff; cursor: pointer; text-shadow: 2px 2px 4px #000;
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); /* 6 columns */
+            gap: 5px;
+            margin-top: 10px;
         }
-        .back-btn { position: absolute; top: 20px; left: 20px; background: #d4a373; color: #4e2e1a; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .gem {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            transition: transform 0.1s;
+        }
+        .gem:active { transform: scale(0.9); }
+        .selected { border: 3px solid white; box-shadow: 0 0 10px white; }
+
+        /* Gem Colors */
+        .color-0 { background: #ff4d4d; } /* Red */
+        .color-1 { background: #4d94ff; } /* Blue */
+        .color-2 { background: #7ca852; } /* Green */
+        .color-3 { background: #ffd11a; } /* Yellow */
+
+        .back-btn { position: absolute; top: 20px; left: 20px; background: #d4a373; color: #4e2e1a; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; z-index: 200;}
     </style>
 </head>
 <body>
@@ -40,18 +56,17 @@
 
         <div id="map-view" class="screen">
             <img src="assets/map/map_saga_background1.jpg">
-            <div class="hitbox" style="bottom: 2%; left: 42%; width: 15%; height: 8%;" onclick="startLevel(1)"></div>
-            <div class="hitbox" style="bottom: 12%; left: 48%; width: 15%; height: 7%;" onclick="startLevel(2)"></div>
+            <div class="hitbox" style="bottom: 8%; left: 45%; width: 15%; height: 8%;" onclick="startLevel(1)"></div>
+            <div class="hitbox" style="bottom: 18%; left: 40%; width: 15%; height: 8%;" onclick="startLevel(2)"></div>
+            <div class="hitbox" style="bottom: 28%; left: 38%; width: 15%; height: 8%;" onclick="startLevel(3)"></div>
             </div>
 
         <div id="puzzle-view" class="screen">
-            <img src="assets/backgrounds/bg_mystical_gates.png">
+            <img src="assets/backgrounds/bg_mystical_gates.png" style="filter: blur(4px);">
             <div class="back-btn" onclick="exitLevel()">MAP</div>
-            <div id="puzzle-ui">
-                <h2>BAMBOO LOCK</h2>
-                <p>Align the numbers to open the gate!</p>
-                <div class="bamboo-row" id="bamboo-container">
-                    </div>
+            <div id="game-ui">
+                <h3 id="level-banner">Level 1</h3>
+                <div id="grid"></div>
             </div>
         </div>
     </div>
