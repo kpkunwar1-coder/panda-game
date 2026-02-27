@@ -1,60 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pandu's Adventure</title>
-    <style>
-        body { background: #000; color: white; text-align: center; margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
-        .game-container { max-width: 500px; margin: auto; position: relative; height: 100vh; background: #1a1a1a; }
-        .screen { display: none; width: 100%; height: 100%; position: relative; }
-        .active { display: block; }
-        img { width: 100%; height: 100%; object-fit: contain; display: block; }
+<style>
+    /* ... keep your previous body and screen styles ... */
 
-        /* Invisible clickable box over the START graphic */
-        #start-hotspot {
-            position: absolute;
-            bottom: 4%;      
-            left: 10%; 
-            width: 80%; 
-            height: 16%; 
-            cursor: pointer;
-            z-index: 100;
-        }
+    /* The Custom Continue Button Style */
+    .btn-continue-img {
+        position: absolute;
+        bottom: 5%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 220px; /* Adjust size as needed */
+        cursor: pointer;
+        z-index: 101;
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+    }
 
-        .btn-next {
-            position: absolute;
-            bottom: 8%;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 15px 40px;
-            background: #FFD700;
-            color: #000;
-            border: 3px solid white;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 1.2rem;
-            z-index: 101;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
+    .btn-continue-img:hover {
+        transform: translateX(-50%) scale(1.1);
+    }
 
-    <div class="game-container">
-        <div id="story-view" class="screen active">
-            <img id="story-img" src="assets/backgrounds/ui_landing_page_start.png" alt="Pandu's World">
-            
-            <div id="start-hotspot" onclick="beginAdventure()"></div>
-            
-            <button id="next-button" class="btn-next" onclick="advanceStory()" style="display:none;">CONTINUE...</button>
-        </div>
+    /* Animation for the 'Book Page' feel */
+    .page-slide {
+        animation: slideIn 0.5s ease-out forwards;
+    }
 
-        <div id="map-view" class="screen">
-            <img src="assets/map/map_saga_background.png">
-        </div>
-    </div>
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+</style>
 
-    <script src="script.js"></script>
-</body>
-</html>
+<div id="story-view" class="screen active">
+    <img id="story-img" src="assets/backgrounds/ui_landing_page_start.png">
+    
+    <div id="start-hotspot" onclick="beginAdventure()"></div>
+    
+    <img id="next-button" 
+         src="assets/ui/continue_btn.png" 
+         class="btn-continue-img" 
+         onclick="advanceStory()" 
+         style="display:none;">
+</div>
