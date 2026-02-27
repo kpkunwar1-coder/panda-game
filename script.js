@@ -1,39 +1,36 @@
-let storyStep = 0;
-const storyImages = [
-    "assets/backgrounds/ui_landing_page_start.png",
-    "assets/backgrounds/bg_pandu_home.png",
-    "assets/backgrounds/bg_ancient_ruins.png",
-    "assets/backgrounds/bg_mystical_gates.png"
+let currentStoryStep = 0;
+
+// Ensure these match your assets folder filenames exactly
+const adventureStory = [
+    "assets/backgrounds/ui_landing_page_start.png", 
+    "assets/backgrounds/bg_pandu_home.png",         
+    "assets/backgrounds/bg_ancient_ruins.png",      
+    "assets/backgrounds/bg_mystical_gates.png"       
 ];
 
+function beginAdventure() {
+    console.log("Start button clicked!"); // This helps us debug
+    
+    // Hide the invisible start hotspot
+    document.getElementById('start-hotspot').style.display = 'none';
+    
+    // Show the "Next" button for the story
+    document.getElementById('next-button').style.display = 'block';
+    
+    // Move to the first actual story slide
+    advanceStory();
+}
+
 function advanceStory() {
-    storyStep++;
-    if (storyStep < storyImages.length) {
-        document.getElementById('story-img').src = storyImages[storyStep];
+    currentStoryStep++;
+    console.log("Advancing to story step: " + currentStoryStep);
+
+    if (currentStoryStep < adventureStory.length) {
+        // Change the image to the next story slide
+        document.getElementById('story-img').src = adventureStory[currentStoryStep];
     } else {
-        // Switch to Map
+        // We reached the end of the story, go to the Map
         document.getElementById('story-view').classList.remove('active');
         document.getElementById('map-view').classList.add('active');
     }
-}
-
-function loadLevel(lvl) {
-    document.getElementById('map-view').classList.remove('active');
-    document.getElementById('puzzle-view').classList.add('active');
-    
-    let formatted = lvl < 10 ? "0" + lvl : lvl;
-    document.getElementById('puzzle-img').src = "assets/puzzles/puzzle_lvl_" + formatted + ".png";
-    
-    // Set the "Success" target position based on level
-    if(lvl === 1) { 
-        document.getElementById('level-target').style.top = "60%"; 
-        document.getElementById('level-target').style.left = "40%";
-    }
-}
-
-function completeLevel() {
-    alert("Fantastic! You found the clue!");
-    // Here we would show the Pandu Success Portrait
-    document.getElementById('puzzle-view').classList.remove('active');
-    document.getElementById('map-view').classList.add('active');
 }
