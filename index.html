@@ -11,16 +11,15 @@
         .active { display: block; }
         img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-        /* The Invisible Start Hotspot over the Bamboo Button */
+        /* Invisible clickable box over the START graphic */
         #start-hotspot {
             position: absolute;
-            bottom: 3%;      /* Adjusted for the bamboo button position */
+            bottom: 4%;      
             left: 10%; 
             width: 80%; 
-            height: 18%; 
+            height: 16%; 
             cursor: pointer;
             z-index: 100;
-            /* border: 2px solid lime; */ /* Uncomment to see the clickable area */
         }
 
         .btn-next {
@@ -30,14 +29,13 @@
             transform: translateX(-50%);
             padding: 15px 40px;
             background: #FFD700;
-            color: #333;
+            color: #000;
             border: 3px solid white;
             border-radius: 50px;
             font-weight: bold;
             font-size: 1.2rem;
             z-index: 101;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
     </style>
 </head>
@@ -45,7 +43,7 @@
 
     <div class="game-container">
         <div id="story-view" class="screen active">
-            <img id="story-img" src="assets/backgrounds/ui_landing_page_start.jpg" alt="Pandu's World">
+            <img id="story-img" src="assets/backgrounds/ui_landing_page_start.png" alt="Pandu's World">
             
             <div id="start-hotspot" onclick="beginAdventure()"></div>
             
@@ -54,7 +52,7 @@
 
         <div id="map-view" class="screen">
             <img src="assets/map/map_saga_background.png">
-            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
