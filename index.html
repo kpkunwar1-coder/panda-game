@@ -11,62 +11,64 @@
         .active { display: block; }
         img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-        /* The Invisible Start Hotspot on Landing Page */
-        #start-hotspot {
+        /* The Invisible Hotspot for the Infused Buttons */
+        .click-zone {
             position: absolute;
-            bottom: 4%;      
-            left: 10%; 
-            width: 80%; 
-            height: 16%; 
+            bottom: 2%;
+            left: 5%; 
+            width: 90%; 
+            height: 18%; 
             cursor: pointer;
             z-index: 100;
         }
 
-        /* Your New Custom Bamboo Continue Button */
-        .btn-continue-img {
+        /* Map Level Markers */
+        .level-node {
             position: absolute;
-            bottom: 5%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 220px; 
+            width: 40px;
+            height: 40px;
+            background: #FFD700;
+            border: 2px solid white;
+            border-radius: 50%;
+            color: black;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            z-index: 101;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+            box-shadow: 0 0 10px gold;
+            font-size: 1.1rem;
+            transition: transform 0.2s;
         }
 
-        .btn-continue-img:hover {
-            transform: translateX(-50%) scale(1.1);
-        }
+        .level-node:hover { transform: scale(1.2); }
 
-        /* Animation for the 'Book Page' feel */
-        .page-slide {
-            animation: slideIn 0.5s ease-out forwards;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(30px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
+        /* Page Turn Animation */
+        .page-slide { animation: slideIn 0.5s ease-out forwards; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
     </style>
 </head>
 <body>
 
     <div class="game-container">
         <div id="story-view" class="screen active">
-            <img id="story-img" src="assets/backgrounds/ui_landing_page_start.png" alt="Pandu's World">
-            
-            <div id="start-hotspot" onclick="beginAdventure()"></div>
-            
-            <img id="next-button" 
-                 src="assets/ui/continue_btn.png" 
-                 class="btn-continue-img" 
-                 onclick="advanceStory()" 
-                 style="display:none;">
+            <img id="story-img" src="assets/backgrounds/ui_landing_page_start.png">
+            <div id="story-click-zone" class="click-zone" onclick="handleStoryClick()"></div>
         </div>
 
         <div id="map-view" class="screen">
             <img src="assets/map/map_saga_background.png">
+            
+            <div class="level-node" style="bottom: 12%; left: 48%;" onclick="startLevel(1)">1</div>
+            <div class="level-node" style="bottom: 18%; left: 32%;" onclick="startLevel(2)">2</div>
+            <div class="level-node" style="bottom: 25%; left: 22%;" onclick="startLevel(3)">3</div>
+            <div class="level-node" style="bottom: 35%; left: 30%;" onclick="startLevel(4)">4</div>
+            <div class="level-node" style="bottom: 42%; left: 45%;" onclick="startLevel(5)">5</div>
+            <div class="level-node" style="bottom: 50%; left: 60%;" onclick="startLevel(6)">6</div>
+            <div class="level-node" style="bottom: 60%; left: 55%;" onclick="startLevel(7)">7</div>
+            <div class="level-node" style="bottom: 68%; left: 40%;" onclick="startLevel(8)">8</div>
+            <div class="level-node" style="bottom: 75%; left: 25%;" onclick="startLevel(9)">9</div>
+            <div class="level-node" style="bottom: 85%; left: 35%;" onclick="startLevel(10)">10</div>
         </div>
     </div>
 
