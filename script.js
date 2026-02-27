@@ -1,6 +1,6 @@
 let storyStep = 0;
 const storyImages = [
-    "assets/backgrounds/ui_landing_page_start.jpg",
+    "assets/backgrounds/ui_landing_page_start.png",
     "assets/backgrounds/bg_pandu_home.png",
     "assets/backgrounds/bg_ancient_ruins.png",
     "assets/backgrounds/bg_mystical_gates.png"
