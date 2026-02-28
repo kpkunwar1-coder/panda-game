@@ -2,29 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Pandu's Quest: The Gilded Chase</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pandu's Quest</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="screen-landing" class="screen">
-        <div id="start-hotspot" onclick="showStory()"></div>
+    <div id="screen-landing" class="screen active">
+        <div id="start-hotspot" onclick="startStory()"></div>
     </div>
 
-    <div id="screen-story" class="screen" style="display:none;">
-        <div id="story-content" class="glass-ui">
-            <p id="story-text">The Monkey King has stolen the sacred staff!</p>
-            <button class="btn-next" onclick="nextStory()">NEXT</button>
+    <div id="screen-story" class="screen" onclick="nextStorySlide()"></div>
+
+    <div id="screen-map" class="screen">
+        <div class="map-container">
+            <div class="level-node" onclick="launchLevel(1)">1</div>
         </div>
     </div>
 
-    <div id="screen-map" class="screen" style="display:none;">
-        <div class="level-node" id="level-1" onclick="startLevel(1)">1</div>
-        </div>
-
-    <div id="screen-game" class="screen" style="display:none;">
+    <div id="screen-game" class="screen">
         <div id="grid"></div>
-        <div class="score-board">Score: <span id="score">0</span></div>
+        <div class="ui-layer">
+            <p>Score: <span id="score-val">0</span></p>
+        </div>
     </div>
 
     <script src="script.js"></script>
