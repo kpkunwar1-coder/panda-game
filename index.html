@@ -2,47 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pandu's Quest: Stage 1</title>
+    <title>Pandu's Quest: The Gilded Chase</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="screen-landing" class="screen">
-        <div class="story-box">
-            <h1>PANDU'S QUEST</h1>
-            <p>The Monkey King has stolen the sacred staff and scattered the map! 
-               Help Pandu recover the pieces in the Bamboo Grove.</p>
-            <button class="btn-main" onclick="showScreen('screen-map')">ENTER THE GROVE</button>
+        <div id="start-hotspot" onclick="showStory()"></div>
+    </div>
+
+    <div id="screen-story" class="screen" style="display:none;">
+        <div id="story-content" class="glass-ui">
+            <p id="story-text">The Monkey King has stolen the sacred staff!</p>
+            <button class="btn-next" onclick="nextStory()">NEXT</button>
         </div>
     </div>
 
     <div id="screen-map" class="screen" style="display:none;">
-        <h2>Stage 1: Bamboo Grove</h2>
-        <div class="map-container">
-            <button class="level-node active" onclick="startLevel(0)">1</button>
-            <button id="node-1" class="level-node" onclick="startLevel(1)" disabled>2</button>
-            <button id="node-2" class="level-node" onclick="startLevel(2)" disabled>3</button>
-            <button id="node-3" class="level-node" onclick="startLevel(3)" disabled>4</button>
-            <button id="node-4" class="level-node" onclick="startLevel(4)" disabled>5</button>
+        <div class="level-node" id="level-1" onclick="startLevel(1)">1</div>
         </div>
-        <button class="btn-back" onclick="showScreen('screen-landing')">Back</button>
-    </div>
 
     <div id="screen-game" class="screen" style="display:none;">
-        <div class="game-ui">
-            <div class="stat">Moves: <span id="moves-count">0</span></div>
-            <div class="stat">Target: <span id="target-text">0</span></div>
-            <div class="stat">Score: <span id="current-score">0</span></div>
-        </div>
-
-        <div id="board-frame">
-            <div id="grid"></div> </div>
-
-        <div class="controls">
-            <button class="btn-booster" onclick="reshuffleBoard()">Reshuffle</button>
-            <button class="btn-back" onclick="showScreen('screen-map')">Give Up</button>
-        </div>
+        <div id="grid"></div>
+        <div class="score-board">Score: <span id="score">0</span></div>
     </div>
 
     <script src="script.js"></script>
