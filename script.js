@@ -1,96 +1,63 @@
-/**
- * PANDU'S QUEST: THE GILDED CHASE
- * Full Game Controller
- */
-
-// --- 1. CONFIGURATION & STATE ---
-let currentStoryStep = 0;
+// --- 1. STATE MANAGEMENT ---
+let storyStep = 0;
 const storyImages = [
     'assets/backgrounds/bg_pandu_home.png',
     'assets/backgrounds/bg_ancient_ruins.png',
     'assets/backgrounds/bg_mystical_gates.png'
 ];
 
-// --- 2. SCREEN NAVIGATION ---
+// --- 2. NAVIGATION LOGIC ---
 
-/**
- * Triggered by the 'START' hotspot on the landing page
- */
 function startStory() {
-    // Hide Landing, Show Story
+    console.log("Start button clicked. Moving to Story...");
     switchScreen('screen-landing', 'screen-story');
-    // Load the first story image (Pandu's Home)
-    updateStoryBackground();
+    updateStoryImg();
 }
 
-/**
- * Triggered by tapping anywhere on the story screen
- */
 function nextStorySlide() {
-    currentStoryStep++;
-    
-    // If we still have story images, show the next one
-    if (currentStoryStep < storyImages.length) {
-        updateStoryBackground();
+    storyStep++;
+    if (storyStep < storyImages.length) {
+        updateStoryImg();
     } else {
-        // If story is over, show the Map
         showMap();
     }
 }
 
-/**
- * Updates the background of the story div
- */
-function updateStoryBackground() {
+function updateStoryImg() {
     const storyScreen = document.getElementById('screen-story');
-    storyScreen.style.backgroundImage = `url('${storyImages[currentStoryStep]}')`;
+    storyScreen.style.backgroundImage = `url('${storyImages[storyStep]}')`;
+    console.log("Loading Story Image: " + storyImages[storyStep]);
 }
 
-/**
- * Transitions to the Map Screen
- */
 function showMap() {
     switchScreen('screen-story', 'screen-map');
-    // Set the map background
-    document.getElementById('screen-map').style.backgroundImage = "url('assets/backgrounds/map_background.png')";
+    document.getElementById('screen-map').style.backgroundImage = "url('assets/backgrounds/bg_golden_valley.png')";
 }
 
-/**
- * Utility function to swap visibility of screens
- */
-function switchScreen(hideId, showId) {
-    const hideEl = document.getElementById(hideId);
-    const showEl = document.getElementById(showId);
-    
-    if (hideEl) hideEl.classList.remove('active');
-    if (showEl) showEl.classList.add('active');
-}
-
-// --- 3. MATCH-3 GAME ENGINE (Level 1) ---
-
-/**
- * Triggered when a level node is clicked on the map
- */
-function launchLevel(levelNum) {
+function launchLevel(lvl) {
     switchScreen('screen-map', 'screen-game');
-    initMatch3Board();
+    initGame();
 }
 
-function initMatch3Board() {
-    const grid = document.getElementById('grid');
-    // Clear existing grid if any
-    grid.innerHTML = ''; 
+function switchScreen(oldId, newId) {
+    document.getElementById(oldId).classList.remove('active');
+    document.getElementById(newId).classList.add('active');
+}
 
+// --- 3. MATCH-3 CORE ---
+
+function initGame() {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = ''; // Clear previous board
+    
     for (let i = 0; i < 64; i++) {
         const tile = document.createElement('div');
         tile.className = 'tile';
-        tile.setAttribute('id', i);
         
-        // Randomly assign one of your 5 crystal PNGs
-        let randomCrystal = Math.floor(Math.random() * 5) + 1; 
-        tile.style.backgroundImage = `url('assets/puzzles/crystal_0${randomCrystal}.png')`;
+        // Use your 5 crystals
+        let crystalId = Math.floor(Math.random() * 5) + 1;
+        tile.style.backgroundImage = `url('assets/puzzles/crystal_0${crystalId}.png')`;
         
         grid.appendChild(tile);
     }
-    console.log("Match-3 Board Initialized with your Crystals!");
 }
