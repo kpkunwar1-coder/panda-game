@@ -63,3 +63,25 @@ function returnToMap() {
     document.getElementById('win-popup').style.display = 'none';
     switchScreen('screen-game', 'screen-map');
 }
+function triggerWin() {
+    // 1. Start the Confetti
+    for(let i=0; i<150; i++) { createConfetti(); }
+    
+    // 2. Play a "Win" sound if you have one
+    // winSound.play();
+
+    // 3. Show the celebratory banner
+    const banner = document.getElementById('win-popup');
+    banner.style.display = 'flex';
+    banner.classList.add('animate-slide-down');
+}
+
+function returnToMap() {
+    // Animate the Pandu character on the map to the next node
+    const nextNode = document.querySelector('.level-node.locked');
+    if(nextNode) {
+        nextNode.classList.remove('locked');
+        nextNode.classList.add('active');
+    }
+    switchScreen('screen-game', 'screen-map');
+}
