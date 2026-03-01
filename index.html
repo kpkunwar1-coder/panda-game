@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pandu's Quest: Master Edition</title>
+    <title>Pandu's Quest</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,48 +18,31 @@
         <div class="map-header">
             <div class="map-stat">❤️ 5</div>
             <div class="map-stat">🪙 100</div>
-            <div class="settings-btn">⚙️</div>
         </div>
         <div class="map-scroll-area">
-            <div class="level-node active" style="bottom: 15%; left: 50%;" onclick="launchLevel(1)">1</div>
-            <div class="level-node locked" style="bottom: 30%; left: 30%;">2</div>
-            <div class="level-node locked" style="bottom: 45%; left: 60%;">3</div>
+            <div class="level-node" id="node-1" onclick="launchLevel(1)">1</div>
         </div>
-        <div class="map-footer">
-            <div class="nav-item">🗺️<br>Map</div>
-            <div class="nav-item">👥<br>Social</div>
-            <div class="nav-item">🛒<br>Shop</div>
-        </div>
-
         <div id="pre-level-modal" class="modal-overlay" style="display:none;">
             <div class="modal-content">
                 <div class="modal-header-cloud">Level 1</div>
-                <button class="close-modal" onclick="closePreLevel()">✖</button>
-                <div class="objective-box">
-                    <p>Objective:</p>
-                    <div class="objective-item">💎 Collect 100 Points!</div>
-                </div>
+                <p>Objective: Match Crystals!</p>
                 <button class="btn-play" onclick="confirmStartLevel()">Play!</button>
+                <button class="close-btn" onclick="closePreLevel()">✕</button>
             </div>
         </div>
     </div>
 
     <div id="screen-game" class="screen">
         <div class="game-header">
-            <div class="moves-container"><span id="moves-count">20</span></div>
-            <div class="score-progress-bar"><div id="progress-fill"></div></div>
+            <div class="moves-container">Moves: <span id="moves-count">20</span></div>
+            <div class="score-bar"><div id="progress-fill"></div></div>
         </div>
         <div id="grid-container"><div id="grid"></div></div>
-        <div class="booster-bar">
-            <div class="booster">✋</div>
-            <div class="booster">🍭</div>
-        </div>
-
+        
         <div id="win-popup" class="overlay" style="display:none;">
             <div class="popup-content">
-                <div class="cloud-header">Level Complete!</div>
-                <div class="win-circle">⭐</div>
-                <button class="btn-next-level" onclick="returnToMap()">Next</button>
+                <h2>Level Complete!</h2>
+                <button class="btn-play" onclick="returnToMap()">Next</button>
             </div>
         </div>
     </div>
