@@ -1,11 +1,10 @@
-// --- STATE & CONFIG ---
+// --- CONFIG & STATE ---
 let storyStep = 0;
 const storyImages = ['assets/backgrounds/bg_pandu_home.png', 'assets/backgrounds/bg_ancient_ruins.png', 'assets/backgrounds/bg_mystical_gates.png'];
 let score = 0;
 let moves = 20;
-const width = 8;
 let tiles = [];
-let firstSelection = null;
+let dragSource = null;
 
 // --- NAVIGATION ---
 function startStory() { switchScreen('screen-landing', 'screen-story'); updateStoryImg(); }
@@ -17,7 +16,7 @@ function closePreLevel() { document.getElementById('pre-level-modal').style.disp
 function confirmStartLevel() { closePreLevel(); switchScreen('screen-map', 'screen-game'); initGame(); }
 function switchScreen(oldId, newId) { document.getElementById(oldId).classList.remove('active'); document.getElementById(newId).classList.add('active'); }
 
-// --- GAME ENGINE ---
+// --- THE POINTER DRAG ENGINE ---
 function initGame() {
     const grid = document.getElementById('grid');
     grid.innerHTML = ''; tiles = [];
@@ -33,32 +32,40 @@ function initGame() {
         } else {
             let crystalId = Math.floor(Math.random() * 5) + 1;
             tile.style.backgroundImage = `url('assets/puzzles/crystal_0${crystalId}.png')`;
-            tile.addEventListener('click', () => handleTileClick(tile));
+            
+            // Pointer Listeners for Dragging
+            tile.addEventListener('pointerdown', onPointerDown);
+            tile.addEventListener('pointerup', onPointerUp);
         }
         grid.appendChild(tile); tiles.push(tile);
     }
-    // Main Loop
+    // Continuous loop for gravity and auto-matching
     window.setInterval(() => { checkMatches(); refillBoard(); }, 150);
 }
 
-function handleTileClick(tile) {
-    if (!firstSelection) {
-        // First click
-        firstSelection = tile;
-        tile.classList.add('selected');
-    } else {
-        // Second click
-        const id1 = parseInt(firstSelection.id);
-        const id2 = parseInt(tile.id);
+function onPointerDown(e) {
+    dragSource = e.currentTarget;
+    dragSource.classList.add('dragging');
+    dragSource.setPointerCapture(e.pointerId);
+}
+
+function onPointerUp(e) {
+    if (!dragSource) return;
+    dragSource.classList.remove('dragging');
+
+    const elementAtPoint = document.elementFromPoint(e.clientX, e.clientY);
+    const targetTile = elementAtPoint ? elementAtPoint.closest('.tile') : null;
+
+    if (targetTile && targetTile !== dragSource && !targetTile.classList.contains('hidden-tile')) {
+        const id1 = parseInt(dragSource.id);
+        const id2 = parseInt(targetTile.id);
         const validMoves = [id1 - 1, id1 + 1, id1 - 8, id1 + 8];
 
         if (validMoves.includes(id2)) {
-            performSwap(firstSelection, tile, true);
+            performSwap(dragSource, targetTile, true);
         }
-
-        firstSelection.classList.remove('selected');
-        firstSelection = null;
     }
+    dragSource = null;
 }
 
 function performSwap(t1, t2, canSwapBack) {
@@ -68,37 +75,33 @@ function performSwap(t1, t2, canSwapBack) {
     t1.style.backgroundImage = img2;
     t2.style.backgroundImage = img1;
 
-    // Wait for the animation, then check if it created a match
     setTimeout(() => {
         const hasMatch = checkSpecificMatch(parseInt(t1.id)) || checkSpecificMatch(parseInt(t2.id));
-        
         if (hasMatch) {
-            moves--;
-            updateUI();
+            moves--; updateUI();
         } else if (canSwapBack) {
-            // SWAP BACK logic
+            // SWAP BACK ANIMATION
             t1.style.backgroundImage = img1;
             t2.style.backgroundImage = img2;
         }
     }, 300);
 }
 
+// Check if a specific tile is part of a match (used for swap-back logic)
 function checkSpecificMatch(i) {
     let color = tiles[i].style.backgroundImage;
     if (!color || tiles[i].classList.contains('hidden-tile')) return false;
-
-    // Simplified match check for swap-back logic
-    let hMatch = false, vMatch = false;
+    
     // Check horizontal
-    let rowStart = Math.floor(i/8) * 8;
-    for(let c = rowStart; c <= rowStart+5; c++) {
-        if(tiles[c].style.backgroundImage === color && tiles[c+1].style.backgroundImage === color && tiles[c+2].style.backgroundImage === color) hMatch = true;
+    let rowStart = Math.floor(i / 8) * 8;
+    for (let c = rowStart; c <= rowStart + 5; c++) {
+        if (tiles[c].style.backgroundImage === color && tiles[c+1].style.backgroundImage === color && tiles[c+2].style.backgroundImage === color) return true;
     }
     // Check vertical
-    for(let r = 0; r < 48; r++) {
-        if(tiles[r].style.backgroundImage === color && tiles[r+8].style.backgroundImage === color && tiles[r+16].style.backgroundImage === color) vMatch = true;
+    for (let r = 0; r < 48; r++) {
+        if (tiles[r].style.backgroundImage === color && tiles[r+8].style.backgroundImage === color && tiles[r+16].style.backgroundImage === color) return true;
     }
-    return hMatch || vMatch;
+    return false;
 }
 
 function checkMatches() {
@@ -106,14 +109,14 @@ function checkMatches() {
         let color = tiles[i].style.backgroundImage;
         if (color === '' || tiles[i].classList.contains('hidden-tile')) continue;
 
-        if (i % 8 < 6) {
+        if (i % 8 < 6) { // Horizontal 3
             let row = [i, i + 1, i + 2];
             if (row.every(idx => tiles[idx].style.backgroundImage === color)) {
                 score += 5; updateUI();
                 row.forEach(idx => tiles[idx].style.backgroundImage = '');
             }
         }
-        if (i < 48) {
+        if (i < 48) { // Vertical 3
             let col = [i, i + 8, i + 16];
             if (col.every(idx => tiles[idx].style.backgroundImage === color)) {
                 score += 5; updateUI();
@@ -124,13 +127,13 @@ function checkMatches() {
 }
 
 function refillBoard() {
-    for (let i = 47; i >= 0; i--) {
+    for (let i = 47; i >= 0; i--) { // Falling logic
         if (tiles[i + 8].style.backgroundImage === '' && !tiles[i + 8].classList.contains('hidden-tile')) {
             tiles[i + 8].style.backgroundImage = tiles[i].style.backgroundImage;
             tiles[i].style.backgroundImage = '';
         }
     }
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 8; i++) { // Spawn new tiles
         if (tiles[i].style.backgroundImage === '' && !tiles[i].classList.contains('hidden-tile')) {
             let id = Math.floor(Math.random() * 5) + 1;
             tiles[i].style.backgroundImage = `url('assets/puzzles/crystal_0${id}.png')`;
@@ -142,7 +145,7 @@ function updateUI() {
     document.getElementById('moves-count').innerText = moves;
     document.getElementById('progress-fill').style.width = Math.min(score, 100) + '%';
     if (score >= 100) triggerWin();
-    if (moves <= 0 && score < 100) { alert("Out of moves!"); location.reload(); }
+    if (moves <= 0 && score < 100) { alert("Out of moves! Try again?"); location.reload(); }
 }
 
 function triggerWin() {
