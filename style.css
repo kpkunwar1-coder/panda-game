@@ -1,79 +1,57 @@
-* { box-sizing: border-box; touch-action: manipulation; }
-body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; }
+/* GAME SCREEN TRANSFORMATION */
+#screen-game {
+    background-image: url('assets/backgrounds/bg_mystical_gates.png');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
-.screen { display: none; width: 100vw; height: 100vh; background-size: cover; background-position: center; position: absolute; }
-.active { display: block !important; }
+/* THE GRID CONTAINER (Glass Effect) */
+#grid-container {
+    background: rgba(255, 255, 255, 0.2); 
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    border-radius: 25px;
+    border: 4px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    margin-top: 20px;
+}
 
-/* Landing & Story */
-#screen-landing { background-image: url('assets/backgrounds/ui_landing_page_start.png'); }
-#start-hotspot { position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%); width: 260px; height: 100px; cursor: pointer; z-index: 10; }
-
-/* Map UI */
-.map-header { display: flex; justify-content: space-between; padding: 15px; z-index: 5; }
-.map-stat { background: white; padding: 5px 15px; border-radius: 20px; border: 2px solid #ff3385; font-weight: bold; }
-.level-node { position: absolute; width: 55px; height: 55px; background: #ff3385; border: 4px solid white; border-radius: 50%; color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-
-/* Modal & Popups */
-.modal-overlay, .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 2000; }
-.modal-content { background: white; width: 80%; border-radius: 30px; padding: 30px; border: 6px solid #ff99cc; text-align: center; position: relative; }
-.btn-play, .btn-next-level { background: #ff3385; color: white; border: none; padding: 12px 40px; border-radius: 25px; font-size: 20px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 0 #b30047; }
-
-/* Game Grid (Cross Shape) */
-#grid { display: grid; grid-template-columns: repeat(8, 42px); grid-template-rows: repeat(8, 42px); gap: 4px; justify-content: center; padding-top: 100px; }
-.tile { width: 42px; height: 42px; background-size: contain; background-repeat: no-repeat; cursor: pointer; }
-.hidden-tile { visibility: hidden; }
-
-/* Confetti */
-.confetti { position: absolute; width: 8px; height: 8px; z-index: 3000; pointer-events: none; animation: fall linear forwards; }
-@keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
-/* CANDY FALLING ANIMATION */
+/* THE TILES & DRAG STATES */
 .tile {
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* The "Bounce" */
-}
-
-/* WIN BANNER ANIMATION */
-@keyframes slideDown {
-    0% { transform: translateY(-100%); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-}
-
-.animate-slide-down {
-    animation: slideDown 0.8s ease-out forwards;
-}
-
-/* CONFETTI SHAPES */
-.confetti {
-    border-radius: 2px; /* Makes them look like little paper scraps */
-}
-/* ADD TO THE BOTTOM OF STYLE.CSS */
-.tile {
-    transition: background-image 0.2s ease-in-out;
-    cursor: grab;
-}
-
-.tile:active {
-    cursor: grabbing;
-    transform: scale(1.1);
+    width: 42px;
+    height: 42px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: rgba(0, 0, 0, 0.1); /* The "Slot" look */
+    border-radius: 8px;
+    position: relative;
+    touch-action: none; /* Prevents page scroll while dragging */
+    user-select: none;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .hidden-tile {
     visibility: hidden;
+    background: none;
     pointer-events: none;
 }
 
-#progress-fill {
-    transition: width 0.4s ease;
-}
-/* Selection Highlight */
-.selected {
-    outline: 4px solid white;
-    outline-offset: -4px;
-    transform: scale(1.1);
-    z-index: 10;
+/* Visual feedback when holding a candy */
+.dragging {
+    z-index: 100;
+    transform: scale(1.3);
     filter: brightness(1.2);
+    opacity: 0.9;
+    cursor: grabbing;
 }
 
-/* Smooth transition for swapping */
-.tile {
-    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+/* Progress Bar Shine */
+#progress-fill {
+    transition: width 0.4s ease;
+    background: linear-gradient(90deg, #ffcc00, #ffff00);
+    box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
 }
