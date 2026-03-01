@@ -26,3 +26,22 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
 /* Confetti */
 .confetti { position: absolute; width: 8px; height: 8px; z-index: 3000; pointer-events: none; animation: fall linear forwards; }
 @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+/* CANDY FALLING ANIMATION */
+.tile {
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* The "Bounce" */
+}
+
+/* WIN BANNER ANIMATION */
+@keyframes slideDown {
+    0% { transform: translateY(-100%); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-down {
+    animation: slideDown 0.8s ease-out forwards;
+}
+
+/* CONFETTI SHAPES */
+.confetti {
+    border-radius: 2px; /* Makes them look like little paper scraps */
+}
